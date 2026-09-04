@@ -1,0 +1,738 @@
+{% extends "gestion/base.html" %}
+
+
+{% block title %}
+    {{ titre }} | Gestion Scolarité
+{% endblock %}
+
+
+{% block page_title %}
+    {{ titre }}
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+    .form-card {
+        border: none;
+        border-radius: 14px;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .05);
+    }
+
+    .form-card-header {
+        padding: 22px 25px;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    .form-card-body {
+        padding: 25px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        border-color: #dfe3e8;
+        border-radius: 8px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .10);
+    }
+
+    .required {
+        color: #dc2626;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 5px;
+    }
+
+    .error-box {
+        border-radius: 8px;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- =========================
+     RETOUR
+========================== -->
+
+<div class="mb-3">
+
+    <a
+        href="{% url 'gestion:candidats_liste' %}"
+        class="text-decoration-none text-muted"
+    >
+
+        <i class="bi bi-arrow-left me-1"></i>
+
+        Retour aux candidats
+
+    </a>
+
+</div>
+
+
+<!-- =========================
+     TITRE
+========================== -->
+
+<div class="mb-4">
+
+    <h2 class="fw-bold mb-1">
+        {{ titre }}
+    </h2>
+
+    <p class="text-muted mb-0">
+
+        {% if candidat %}
+
+            Modifiez les informations du candidat.
+
+        {% else %}
+
+            Renseignez les informations du nouveau candidat.
+
+        {% endif %}
+
+    </p>
+
+</div>
+
+
+<!-- =========================
+     FORMULAIRE
+========================== -->
+
+<form
+    method="post"
+    enctype="multipart/form-data"
+    novalidate
+>
+
+    {% csrf_token %}
+
+
+    <!-- =========================
+         ERREURS GÉNÉRALES
+    ========================== -->
+
+    {% if form.non_field_errors %}
+
+        <div class="alert alert-danger error-box">
+
+            <i class="bi bi-exclamation-triangle me-2"></i>
+
+            {{ form.non_field_errors }}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- =========================
+         INFORMATIONS PERSONNELLES
+    ========================== -->
+
+    <div class="card form-card mb-4">
+
+        <div class="form-card-header">
+
+            <h5 class="fw-bold mb-0">
+
+                <i class="bi bi-person-vcard me-2 text-primary"></i>
+
+                Informations personnelles
+
+            </h5>
+
+        </div>
+
+
+        <div class="form-card-body">
+
+            <div class="row g-4">
+
+
+                <!-- NOM -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.nom.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Nom
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.nom }}
+
+                    {% if form.nom.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.nom.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- PRÉNOMS -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.prenoms.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Prénoms
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.prenoms }}
+
+                    {% if form.prenoms.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.prenoms.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- SEXE -->
+
+                <div class="col-md-4">
+
+                    <label
+                        for="{{ form.sexe.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Sexe
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.sexe }}
+
+                    {% if form.sexe.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.sexe.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- DATE DE NAISSANCE -->
+
+                <div class="col-md-4">
+
+                    <label
+                        for="{{ form.date_naissance.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Date de naissance
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.date_naissance }}
+
+                    {% if form.date_naissance.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.date_naissance.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- LIEU DE NAISSANCE -->
+
+                <div class="col-md-4">
+
+                    <label
+                        for="{{ form.lieu_naissance.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Lieu de naissance
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.lieu_naissance }}
+
+                    {% if form.lieu_naissance.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.lieu_naissance.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- NATIONALITÉ -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.nationalite.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Nationalité
+
+                    </label>
+
+                    {{ form.nationalite }}
+
+                    {% if form.nationalite.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.nationalite.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- PHOTO -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.photo.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Photo
+
+                    </label>
+
+                    {{ form.photo }}
+
+                    <div class="help-text">
+
+                        Formats image recommandés : JPG, JPEG ou PNG.
+
+                    </div>
+
+                    {% if form.photo.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.photo.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         COORDONNÉES
+    ========================== -->
+
+    <div class="card form-card mb-4">
+
+        <div class="form-card-header">
+
+            <h5 class="fw-bold mb-0">
+
+                <i class="bi bi-telephone me-2 text-primary"></i>
+
+                Coordonnées
+
+            </h5>
+
+        </div>
+
+
+        <div class="form-card-body">
+
+            <div class="row g-4">
+
+
+                <!-- TÉLÉPHONE -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.telephone.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Téléphone
+
+                        <span class="required">*</span>
+
+                    </label>
+
+                    {{ form.telephone }}
+
+                    {% if form.telephone.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.telephone.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- EMAIL -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.email.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Email
+
+                    </label>
+
+                    {{ form.email }}
+
+                    {% if form.email.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.email.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- ADRESSE -->
+
+                <div class="col-12">
+
+                    <label
+                        for="{{ form.adresse.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Adresse
+
+                    </label>
+
+                    {{ form.adresse }}
+
+                    {% if form.adresse.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.adresse.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- VILLE -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.ville.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Ville
+
+                    </label>
+
+                    {{ form.ville }}
+
+                    {% if form.ville.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.ville.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         PARCOURS SCOLAIRE
+    ========================== -->
+
+    <div class="card form-card mb-4">
+
+        <div class="form-card-header">
+
+            <h5 class="fw-bold mb-0">
+
+                <i class="bi bi-mortarboard me-2 text-primary"></i>
+
+                Parcours scolaire
+
+            </h5>
+
+        </div>
+
+
+        <div class="form-card-body">
+
+            <div class="row g-4">
+
+
+                <!-- DERNIER DIPLÔME -->
+
+                <div class="col-md-6">
+
+                    <label
+                        for="{{ form.dernier_diplome.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Dernier diplôme
+
+                    </label>
+
+                    {{ form.dernier_diplome }}
+
+                    {% if form.dernier_diplome.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.dernier_diplome.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- SÉRIE -->
+
+                <div class="col-md-3">
+
+                    <label
+                        for="{{ form.serie_diplome.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Série
+
+                    </label>
+
+                    {{ form.serie_diplome }}
+
+                    {% if form.serie_diplome.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.serie_diplome.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- ANNÉE -->
+
+                <div class="col-md-3">
+
+                    <label
+                        for="{{ form.annee_obtention.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Année d'obtention
+
+                    </label>
+
+                    {{ form.annee_obtention }}
+
+                    {% if form.annee_obtention.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.annee_obtention.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- ÉTABLISSEMENT -->
+
+                <div class="col-12">
+
+                    <label
+                        for="{{ form.etablissement_origine.id_for_label }}"
+                        class="form-label"
+                    >
+
+                        Établissement d'origine
+
+                    </label>
+
+                    {{ form.etablissement_origine }}
+
+                    {% if form.etablissement_origine.errors %}
+
+                        <div class="text-danger small mt-1">
+                            {{ form.etablissement_origine.errors }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         STATUT
+    ========================== -->
+
+    <div class="card form-card mb-4">
+
+        <div class="form-card-body">
+
+            <div class="form-check">
+
+                {{ form.actif }}
+
+                <label
+                    class="form-check-label fw-semibold"
+                    for="{{ form.actif.id_for_label }}"
+                >
+
+                    Candidat actif
+
+                </label>
+
+            </div>
+
+
+            <div class="help-text ms-4">
+
+                Un candidat inactif reste dans l'historique mais n'est
+                plus considéré comme actif.
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         BOUTONS
+    ========================== -->
+
+    <div class="d-flex justify-content-end gap-2 mb-5">
+
+
+        <a
+            href="{% url 'gestion:candidats_liste' %}"
+            class="btn btn-light border px-4"
+        >
+            <i class="bi bi-x-lg me-1"></i>
+            Annuler
+
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary px-4"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            {% if candidat %}
+
+                Enregistrer les modifications
+
+            {% else %}
+
+                Enregistrer le candidat
+
+            {% endif %}
+
+        </button>
+
+
+    </div>
+
+
+</form>
+
+
+{% endblock %}

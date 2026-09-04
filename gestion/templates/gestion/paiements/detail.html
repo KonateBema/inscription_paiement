@@ -1,0 +1,763 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+    Paiement {{ paiement.reference }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- ========================================================= -->
+    <!-- HEADER -->
+    <!-- ========================================================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <a
+                href="{% url 'gestion:paiements_liste' %}"
+                class="text-decoration-none text-muted"
+            >
+                <i class="bi bi-arrow-left me-1"></i>
+                Retour aux paiements
+            </a>
+
+            <h2 class="fw-bold mt-3 mb-1">
+
+                <i class="bi bi-receipt me-2 text-primary"></i>
+
+                {{ paiement.reference }}
+
+            </h2>
+
+            <p class="text-muted mb-0">
+                Détails du paiement
+            </p>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- ACTIONS -->
+        <!-- ===================================================== -->
+
+        <div class="d-flex gap-2">
+
+            <!-- Modifier -->
+
+            <a
+                href="{% url 'gestion:paiement_update' paiement.pk %}"
+                class="btn btn-outline-primary"
+            >
+
+                <i class="bi bi-pencil me-1"></i>
+
+                Modifier
+
+            </a>
+
+
+            <!-- Reçu PDF -->
+
+            {% if recu %}
+
+                <a
+                    href="{% url 'gestion:recu_pdf' recu.pk %}"
+                    target="_blank"
+                    class="btn btn-success"
+                >
+
+                    <i class="bi bi-file-earmark-pdf me-1"></i>
+
+                    Reçu
+
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- CONTENU PRINCIPAL -->
+    <!-- ========================================================= -->
+
+    <div class="row g-4">
+
+
+        <!-- ===================================================== -->
+        <!-- COLONNE GAUCHE -->
+        <!-- ===================================================== -->
+
+        <div class="col-xl-8">
+
+
+            <!-- ================================================= -->
+            <!-- INFORMATIONS PAIEMENT -->
+            <!-- ================================================= -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-cash-stack me-2 text-primary"></i>
+
+                        Informations du paiement
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+
+                        <!-- Référence -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Référence
+                            </small>
+
+                            <strong class="fs-5">
+                                {{ paiement.reference }}
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Statut -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Statut
+                            </small>
+
+
+                            {% if paiement.statut == "VALIDE" %}
+
+                                <span class="badge bg-success fs-6">
+
+                                    <i class="bi bi-check-circle me-1"></i>
+
+                                    Paiement validé
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-danger fs-6">
+
+                                    <i class="bi bi-x-circle me-1"></i>
+
+                                    Paiement annulé
+
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- Montant -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Montant payé
+                            </small>
+
+                            <strong class="fs-4 text-primary">
+
+                                {{ paiement.montant|floatformat:2 }}
+
+                                FCFA
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Mode de paiement -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Mode de paiement
+                            </small>
+
+                            <strong>
+
+                                {% if paiement.mode_paiement == "ESPECES" %}
+
+                                    <i class="bi bi-cash me-1"></i>
+                                    Espèces
+
+                                {% elif paiement.mode_paiement == "CHEQUE" %}
+
+                                    <i class="bi bi-file-text me-1"></i>
+                                    Chèque
+
+                                {% elif paiement.mode_paiement == "VIREMENT" %}
+
+                                    <i class="bi bi-bank me-1"></i>
+                                    Virement bancaire
+
+                                {% elif paiement.mode_paiement == "MOBILE_MONEY" %}
+
+                                    <i class="bi bi-phone me-1"></i>
+                                    Mobile Money
+
+                                {% elif paiement.mode_paiement == "CARTE" %}
+
+                                    <i class="bi bi-credit-card me-1"></i>
+                                    Carte bancaire
+
+                                {% else %}
+
+                                    <i class="bi bi-wallet2 me-1"></i>
+                                    Autre
+
+                                {% endif %}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Date -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Date du paiement
+                            </small>
+
+                            <strong>
+
+                                <i class="bi bi-calendar3 me-1"></i>
+
+                                {{ paiement.date_paiement|date:"d/m/Y à H:i" }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Échéance -->
+
+                        {% if paiement.echeance %}
+
+                            <div class="col-md-6">
+
+                                <small class="text-muted d-block mb-1">
+                                    Échéance
+                                </small>
+
+                                <strong>
+
+                                    <i class="bi bi-calendar-check me-1"></i>
+
+                                    {{ paiement.echeance.libelle }}
+
+                                </strong>
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <!-- Observation -->
+
+                        {% if paiement.observation %}
+
+                            <div class="col-12">
+
+                                <small class="text-muted d-block mb-1">
+                                    Observation
+                                </small>
+
+                                <div class="bg-light rounded p-3">
+
+                                    {{ paiement.observation|linebreaksbr }}
+
+                                </div>
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- INFORMATIONS ÉTUDIANT -->
+            <!-- ================================================= -->
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-person-badge me-2 text-primary"></i>
+
+                        Étudiant
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+
+                        <!-- Matricule -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Matricule
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.etudiant.matricule }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Nom -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Nom et prénoms
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.etudiant.candidat.nom }}
+
+                                {{ paiement.scolarite.inscription.etudiant.candidat.prenoms }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Filière -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Filière
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.filiere.nom }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Niveau -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Niveau
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.niveau.nom }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Classe -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Classe
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.classe.nom }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Année académique -->
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block mb-1">
+                                Année académique
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.scolarite.inscription.annee_academique.libelle }}
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- COLONNE DROITE -->
+        <!-- ===================================================== -->
+
+        <div class="col-xl-4">
+
+
+            <!-- ================================================= -->
+            <!-- SITUATION FINANCIÈRE -->
+            <!-- ================================================= -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-wallet2 me-2 text-primary"></i>
+
+                        Situation financière
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <!-- Scolarité nette -->
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+
+                        <span class="text-muted">
+
+                            Scolarité nette
+
+                        </span>
+
+                        <strong>
+
+                            {{ paiement.scolarite.montant_net|floatformat:2 }}
+
+                            FCFA
+
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Total payé -->
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+
+                        <span class="text-muted">
+
+                            Total payé
+
+                        </span>
+
+                        <strong class="text-success">
+
+                            {{ paiement.scolarite.montant_paye|floatformat:2 }}
+
+                            FCFA
+
+                        </strong>
+
+                    </div>
+
+
+                    <hr>
+
+
+                    <!-- Reste -->
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <span class="fw-semibold">
+
+                            Reste à payer
+
+                        </span>
+
+                        <strong class="text-danger fs-5">
+
+                            {{ paiement.scolarite.reste_a_payer|floatformat:2 }}
+
+                            FCFA
+
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Statut scolarité -->
+
+                    <div class="mt-4">
+
+
+                        {% if paiement.scolarite.statut == "SOLDEE" %}
+
+                            <div class="alert alert-success mb-0">
+
+                                <i class="bi bi-check-circle-fill me-2"></i>
+
+                                <strong>Scolarité soldée</strong>
+
+                                <br>
+
+                                <small>
+                                    Aucun montant restant à payer.
+                                </small>
+
+                            </div>
+
+
+                        {% elif paiement.scolarite.statut == "PARTIELLEMENT_PAYEE" %}
+
+                            <div class="alert alert-warning mb-0">
+
+                                <i class="bi bi-hourglass-split me-2"></i>
+
+                                <strong>Paiement partiel</strong>
+
+                                <br>
+
+                                <small>
+                                    Il reste un montant à payer.
+                                </small>
+
+                            </div>
+
+
+                        {% else %}
+
+                            <div class="alert alert-danger mb-0">
+
+                                <i class="bi bi-exclamation-circle-fill me-2"></i>
+
+                                <strong>Scolarité non payée</strong>
+
+                                <br>
+
+                                <small>
+                                    Aucun paiement validé.
+                                </small>
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ÉCHÉANCE -->
+            <!-- ================================================= -->
+
+            {% if paiement.echeance %}
+
+                <div class="card border-0 shadow-sm">
+
+                    <div class="card-header bg-white py-3">
+
+                        <h5 class="mb-0 fw-bold">
+
+                            <i class="bi bi-calendar-check me-2 text-primary"></i>
+
+                            Échéance
+
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+
+                        <!-- Libellé -->
+
+                        <div class="mb-3">
+
+                            <small class="text-muted d-block mb-1">
+                                Libellé
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.echeance.libelle }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Montant -->
+
+                        <div class="mb-3">
+
+                            <small class="text-muted d-block mb-1">
+                                Montant de l'échéance
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.echeance.montant|floatformat:2 }}
+
+                                FCFA
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Date -->
+
+                        <div class="mb-3">
+
+                            <small class="text-muted d-block mb-1">
+                                Date d'échéance
+                            </small>
+
+                            <strong>
+
+                                <i class="bi bi-calendar3 me-1"></i>
+
+                                {{ paiement.echeance.date_echeance|date:"d/m/Y" }}
+
+                            </strong>
+
+                        </div>
+
+
+                        <!-- Situation -->
+
+                        <div>
+
+                            <small class="text-muted d-block mb-1">
+                                Situation
+                            </small>
+
+                            <strong>
+
+                                {{ paiement.echeance.montant_paye|floatformat:2 }}
+
+                                /
+
+                                {{ paiement.echeance.montant|floatformat:2 }}
+
+                                FCFA
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- ================================================= -->
+            <!-- BOUTON REÇU -->
+            <!-- ================================================= -->
+
+            {% if recu %}
+
+                <div class="card border-0 shadow-sm mt-4">
+
+                    <div class="card-body text-center">
+
+                        <div class="mb-3">
+
+                            <i
+                                class="bi bi-file-earmark-pdf text-danger"
+                                style="font-size: 3rem;"
+                            ></i>
+
+                        </div>
+
+                        <h6 class="fw-bold">
+                            Reçu de paiement
+                        </h6>
+
+                        <p class="text-muted small mb-3">
+                            Le reçu officiel est disponible au format PDF.
+                        </p>
+
+                        <a
+                            href="{% url 'gestion:recu_pdf' recu.pk %}"
+                            target="_blank"
+                            class="btn btn-success w-100"
+                        >
+
+                            <i class="bi bi-printer me-2"></i>
+
+                            Ouvrir le reçu PDF
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

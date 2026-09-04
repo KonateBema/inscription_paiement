@@ -1,0 +1,813 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+Candidats | Gestion Scolarité
+{% endblock %}
+
+{% block page_title %}
+Gestion des candidats
+{% endblock %}
+
+{% block content %}
+
+<!-- =========================================================
+     EN-TÊTE DE PAGE
+========================================================= -->
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-1">
+            Candidats
+        </h2>
+
+        <p class="text-muted mb-0">
+            Gestion des candidats enregistrés.
+        </p>
+
+    </div>
+
+
+    <a
+        href="{% url 'gestion:candidat_ajouter' %}"
+        class="btn btn-primary"
+    >
+
+        <i class="bi bi-person-plus-fill me-2"></i>
+
+        Nouveau candidat
+
+    </a>
+
+</div>
+
+
+<!-- =========================================================
+     CARD PRINCIPALE
+========================================================= -->
+
+<div class="card page-card">
+
+
+    <!-- =====================================================
+         HEADER CARD
+    ====================================================== -->
+
+    <div class="page-header">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+            <!-- TITRE + COMPTEUR -->
+
+            <div>
+
+                <h5 class="fw-bold mb-1">
+                    Liste des candidats
+                </h5>
+
+                <small class="text-muted">
+
+                    {{ page_obj.paginator.count }}
+                    candidat{{ page_obj.paginator.count|pluralize }}
+
+                    {% if recherche %}
+                        trouvé{{ page_obj.paginator.count|pluralize }}
+                    {% endif %}
+
+                </small>
+
+            </div>
+
+
+            <!-- =================================================
+                 RECHERCHE
+            ================================================== -->
+
+            <form
+                method="get"
+                class="search-box"
+            >
+
+                <div class="input-group">
+
+                    <!-- ICÔNE -->
+
+                    <span class="input-group-text bg-white">
+
+                        <i class="bi bi-search"></i>
+
+                    </span>
+
+
+                    <!-- CHAMP -->
+
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ recherche }}"
+                        class="form-control"
+                        placeholder="Rechercher un candidat..."
+                        autocomplete="off"
+                    >
+
+
+                    <!-- EFFACER -->
+
+                    {% if recherche %}
+
+                        <a
+                            href="{% url 'gestion:candidats_liste' %}"
+                            class="btn btn-outline-secondary"
+                            title="Effacer la recherche"
+                        >
+
+                            <i class="bi bi-x-lg"></i>
+
+                        </a>
+
+                    {% endif %}
+
+
+                    <!-- RECHERCHER -->
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+
+                        <i class="bi bi-search me-1"></i>
+
+                        Rechercher
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TABLEAU
+    ====================================================== -->
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle mb-0">
+
+            <!-- =================================================
+                 EN-TÊTE TABLEAU
+            ================================================== -->
+
+            <thead>
+
+                <tr>
+
+                    <th class="ps-4">
+                        Candidat
+                    </th>
+
+                    <th>
+                        Matricule
+                    </th>
+
+                    <th>
+                        Sexe
+                    </th>
+
+                    <th>
+                        Téléphone
+                    </th>
+
+                    <th>
+                        Ville
+                    </th>
+
+                    <th>
+                        Statut
+                    </th>
+
+                    <th class="text-end pe-4">
+                        Actions
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <!-- =================================================
+                 CORPS TABLEAU
+            ================================================== -->
+
+            <tbody>
+
+                {% for candidat in candidats %}
+
+                <tr>
+
+                    <!-- =================================================
+                         CANDIDAT
+                    ================================================== -->
+
+                    <td class="ps-4">
+
+                        <div class="d-flex align-items-center gap-3">
+
+
+                            <!-- PHOTO -->
+
+                            {% if candidat.photo %}
+
+                                <img
+                                    src="{{ candidat.photo.url }}"
+                                    alt="Photo de {{ candidat.nom }}"
+                                    class="candidate-photo"
+                                >
+
+                            {% else %}
+
+                                <div class="candidate-placeholder">
+
+                                    <i class="bi bi-person"></i>
+
+                                </div>
+
+                            {% endif %}
+
+
+                            <!-- INFORMATIONS -->
+
+                            <div>
+
+                                <div class="fw-semibold">
+
+                                    {{ candidat.nom }}
+                                    {{ candidat.prenoms }}
+
+                                </div>
+
+                                <small class="text-muted">
+
+                                    {{ candidat.email|default:"Email non renseigné" }}
+
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- =================================================
+                         MATRICULE
+                    ================================================== -->
+
+                    <td>
+
+                        <span class="fw-semibold">
+
+                            {{ candidat.matricule_candidat }}
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- =================================================
+                         SEXE
+                    ================================================== -->
+
+                    <td>
+
+                        {% if candidat.sexe == "M" %}
+
+                            <span class="badge bg-primary">
+                                Masculin
+                            </span>
+
+                        {% elif candidat.sexe == "F" %}
+
+                            <span class="badge bg-info">
+                                Féminin
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+                                Non renseigné
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- =================================================
+                         TÉLÉPHONE
+                    ================================================== -->
+
+                    <td>
+
+                        {{ candidat.telephone|default:"—" }}
+
+                    </td>
+
+
+                    <!-- =================================================
+                         VILLE
+                    ================================================== -->
+
+                    <td>
+
+                        {{ candidat.ville|default:"—" }}
+
+                    </td>
+
+
+                    <!-- =================================================
+                         STATUT
+                    ================================================== -->
+
+                    <td>
+
+                        {% if candidat.actif %}
+
+                            <span class="badge bg-success">
+                                Actif
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+                                Inactif
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- =================================================
+                         ACTIONS
+                    ================================================== -->
+
+                    <td class="text-end pe-4">
+
+                        <div class="d-flex justify-content-end gap-1">
+
+
+                            <!-- VOIR -->
+
+                            <a
+                                href="{% url 'gestion:candidat_detail' candidat.pk %}"
+                                class="btn btn-outline-primary btn-sm action-btn"
+                                title="Voir le candidat"
+                            >
+
+                                <i class="bi bi-eye"></i>
+
+                            </a>
+
+
+                            <!-- MODIFIER -->
+
+                            <a
+                                href="{% url 'gestion:candidat_modifier' candidat.pk %}"
+                                class="btn btn-outline-warning btn-sm action-btn"
+                                title="Modifier le candidat"
+                            >
+
+                                <i class="bi bi-pencil"></i>
+
+                            </a>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                {% empty %}
+
+                <!-- =================================================
+                     AUCUN RÉSULTAT
+                ================================================== -->
+
+                <tr>
+
+                    <td
+                        colspan="7"
+                        class="text-center py-5"
+                    >
+
+                        <div class="text-muted">
+
+                            <i class="bi bi-people fs-1 d-block mb-3"></i>
+
+
+                            <h6 class="fw-semibold">
+
+                                Aucun candidat trouvé
+
+                            </h6>
+
+
+                            {% if recherche %}
+
+                                <p class="mb-3">
+
+                                    Aucun résultat pour
+                                    « {{ recherche }} ».
+
+                                </p>
+
+
+                                <a
+                                    href="{% url 'gestion:candidats_liste' %}"
+                                    class="btn btn-outline-primary btn-sm"
+                                >
+
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+
+                                    Réinitialiser la recherche
+
+                                </a>
+
+                            {% else %}
+
+                                <p class="mb-3">
+
+                                    Aucun candidat n'est encore enregistré.
+
+                                </p>
+
+
+                                <a
+                                    href="{% url 'gestion:candidat_ajouter' %}"
+                                    class="btn btn-primary btn-sm"
+                                >
+
+                                    <i class="bi bi-person-plus me-1"></i>
+
+                                    Ajouter un candidat
+
+                                </a>
+
+                            {% endif %}
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- =========================================================
+         PAGINATION
+    ========================================================== -->
+
+    {% if page_obj.paginator.num_pages > 1 %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center px-4 py-3 border-top">
+
+
+        <!-- =====================================================
+             INFORMATIONS PAGINATION
+        ====================================================== -->
+
+        <div class="text-muted small mb-2 mb-md-0">
+
+            Affichage de
+
+            <strong>
+                {{ page_obj.start_index }}
+            </strong>
+
+            à
+
+            <strong>
+                {{ page_obj.end_index }}
+            </strong>
+
+            sur
+
+            <strong>
+                {{ page_obj.paginator.count }}
+            </strong>
+
+            candidat{{ page_obj.paginator.count|pluralize }}
+
+        </div>
+
+
+        <!-- =====================================================
+             NAVIGATION
+        ====================================================== -->
+
+        <nav aria-label="Pagination des candidats">
+
+            <ul class="pagination pagination-sm mb-0">
+
+
+                <!-- PREMIÈRE PAGE -->
+
+                {% if page_obj.has_previous %}
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?page=1{% if recherche %}&q={{ recherche|urlencode }}{% endif %}"
+                            title="Première page"
+                        >
+
+                            <i class="bi bi-chevron-double-left"></i>
+
+                        </a>
+
+                    </li>
+
+                {% else %}
+
+                    <li class="page-item disabled">
+
+                        <span class="page-link">
+
+                            <i class="bi bi-chevron-double-left"></i>
+
+                        </span>
+
+                    </li>
+
+                {% endif %}
+
+
+                <!-- PAGE PRÉCÉDENTE -->
+
+                {% if page_obj.has_previous %}
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}{% if recherche %}&q={{ recherche|urlencode }}{% endif %}"
+                            title="Page précédente"
+                        >
+
+                            <i class="bi bi-chevron-left"></i>
+
+                        </a>
+
+                    </li>
+
+                {% else %}
+
+                    <li class="page-item disabled">
+
+                        <span class="page-link">
+
+                            <i class="bi bi-chevron-left"></i>
+
+                        </span>
+
+                    </li>
+
+                {% endif %}
+
+
+                <!-- =================================================
+                     NUMÉROS DES PAGES
+                ================================================== -->
+
+                {% for num in page_obj.paginator.page_range %}
+
+                    {% if num == page_obj.number %}
+
+                        <!-- PAGE ACTIVE -->
+
+                        <li class="page-item active">
+
+                            <span class="page-link">
+
+                                {{ num }}
+
+                            </span>
+
+                        </li>
+
+
+                    {% elif num > page_obj.number|add:"-2" and num < page_obj.number|add:"2" %}
+
+                        <!-- PAGE VOISINE -->
+
+                        <li class="page-item">
+
+                            <a
+                                class="page-link"
+                                href="?page={{ num }}{% if recherche %}&q={{ recherche|urlencode }}{% endif %}"
+                            >
+
+                                {{ num }}
+
+                            </a>
+
+                        </li>
+
+                    {% endif %}
+
+                {% endfor %}
+
+
+                <!-- PAGE SUIVANTE -->
+
+                {% if page_obj.has_next %}
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?page={{ page_obj.next_page_number }}{% if recherche %}&q={{ recherche|urlencode }}{% endif %}"
+                            title="Page suivante"
+                        >
+
+                            <i class="bi bi-chevron-right"></i>
+
+                        </a>
+
+                    </li>
+
+                {% else %}
+
+                    <li class="page-item disabled">
+
+                        <span class="page-link">
+
+                            <i class="bi bi-chevron-right"></i>
+
+                        </span>
+
+                    </li>
+
+                {% endif %}
+
+
+                <!-- DERNIÈRE PAGE -->
+
+                {% if page_obj.has_next %}
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?page={{ page_obj.paginator.num_pages }}{% if recherche %}&q={{ recherche|urlencode }}{% endif %}"
+                            title="Dernière page"
+                        >
+
+                            <i class="bi bi-chevron-double-right"></i>
+
+                        </a>
+
+                    </li>
+
+                {% else %}
+
+                    <li class="page-item disabled">
+
+                        <span class="page-link">
+
+                            <i class="bi bi-chevron-double-right"></i>
+
+                        </span>
+
+                    </li>
+
+                {% endif %}
+
+
+            </ul>
+
+        </nav>
+
+    </div>
+
+    {% endif %}
+
+
+</div>
+
+
+<!-- =========================================================
+     STYLE PHOTO
+========================================================== -->
+
+<style>
+
+    /*
+     * Photo du candidat
+     */
+
+    .candidate-photo,
+    .candidate-placeholder {
+
+        width: 40px;
+        height: 40px;
+
+        min-width: 40px;
+        min-height: 40px;
+
+        border-radius: 50%;
+
+    }
+
+
+    /*
+     * Image
+     */
+
+    .candidate-photo {
+
+        object-fit: cover;
+
+        display: block;
+
+        border: 2px solid rgba(0, 0, 0, 0.08);
+
+    }
+
+
+    /*
+     * Placeholder lorsqu'il n'y a pas de photo
+     */
+
+    .candidate-placeholder {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        background-color: #f1f3f5;
+
+        color: #6c757d;
+
+        font-size: 20px;
+
+        border: 2px solid rgba(0, 0, 0, 0.05);
+
+    }
+
+
+    /*
+     * Pagination
+     */
+
+    .pagination .page-link {
+
+        min-width: 34px;
+
+        text-align: center;
+
+    }
+
+
+    /*
+     * Responsive
+     */
+
+    @media (max-width: 768px) {
+
+        .search-box {
+
+            width: 100%;
+
+        }
+
+        .search-box .input-group {
+
+            width: 100%;
+
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+

@@ -1,0 +1,359 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}
+Étudiants | Gestion Scolarité
+{% endblock %}
+
+{% block page_title %}
+Gestion des étudiants
+{% endblock %}
+
+{% block extra_css %}
+
+<style>
+
+    .page-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 5px 20px rgba(0,0,0,.05);
+        overflow: hidden;
+    }
+
+    .page-header {
+        padding: 22px 25px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .search-box {
+        max-width: 450px;
+    }
+
+    .student-photo {
+        width: 45px;
+        height: 45px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .student-placeholder {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 20px;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .student-matricule {
+        font-size: 13px;
+        color: #6c757d;
+    }
+
+    .action-btn {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 50px;
+        opacity: .4;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-card">
+
+    <!-- HEADER -->
+    <div class="page-header">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+            <div>
+
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-people-fill me-2"></i>
+                    Étudiants
+                </h5>
+
+                <div class="text-muted small">
+                    Liste des étudiants actifs
+                </div>
+
+            </div>
+
+            <div class="search-box">
+
+                <form method="get">
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+
+                        <input
+                            type="text"
+                            name="q"
+                            value="{{ recherche }}"
+                            class="form-control"
+                            placeholder="Matricule, nom, prénom, téléphone..."
+                        >
+
+                        {% if recherche %}
+                            <a
+                                href="{% url 'gestion:etudiants_liste' %}"
+                                class="btn btn-outline-secondary"
+                            >
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endif %}
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            Rechercher
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABLE -->
+    {% if etudiants %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th class="ps-4">
+                            Étudiant
+                        </th>
+
+                        <th>
+                            Matricule
+                        </th>
+
+                        <th>
+                            Téléphone
+                        </th>
+
+                        <th>
+                            Ville
+                        </th>
+
+                        <th>
+                            Statut
+                        </th>
+
+                        <th class="text-end pe-4">
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for etudiant in etudiants %}
+
+                        <tr>
+
+                            <!-- ÉTUDIANT -->
+                            <td class="ps-4">
+
+                                <div class="d-flex align-items-center gap-3">
+
+                                    {% if etudiant.candidat.photo %}
+
+                                        <img
+                                            src="{{ etudiant.candidat.photo.url }}"
+                                            alt="{{ etudiant.candidat.nom }}"
+                                            class="student-photo"
+                                        >
+
+                                    {% else %}
+
+                                        <div class="student-placeholder">
+
+                                            <i class="bi bi-person-fill"></i>
+
+                                        </div>
+
+                                    {% endif %}
+
+                                    <div>
+
+                                        <div class="student-name">
+
+                                            {{ etudiant.candidat.nom }}
+                                            {{ etudiant.candidat.prenoms }}
+
+                                        </div>
+
+                                        <div class="student-matricule">
+
+                                            {{ etudiant.candidat.matricule_candidat }}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+
+                            <!-- MATRICULE -->
+                            <td>
+
+                                <span class="badge bg-primary-subtle text-primary">
+
+                                    {{ etudiant.matricule }}
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- TELEPHONE -->
+                            <td>
+
+                                {{ etudiant.candidat.telephone|default:"—" }}
+
+                            </td>
+
+
+                            <!-- VILLE -->
+                            <td>
+
+                                {{ etudiant.candidat.ville|default:"—" }}
+
+                            </td>
+
+
+                            <!-- STATUT -->
+                            <td>
+
+                                {% if etudiant.actif %}
+
+                                    <span class="badge bg-success-subtle text-success">
+
+                                        Actif
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary-subtle text-secondary">
+
+                                        Inactif
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ACTIONS -->
+                            <td class="text-end pe-4">
+
+                                <a
+                                    href="{% url 'gestion:etudiant_detail' etudiant.pk %}"
+                                    class="action-btn btn btn-light"
+                                    title="Voir la fiche"
+                                >
+
+                                    <i class="bi bi-eye"></i>
+
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <i class="bi bi-people"></i>
+
+            <h5 class="mt-3 fw-bold">
+                Aucun étudiant
+            </h5>
+
+            {% if recherche %}
+
+                <p class="mb-3">
+                    Aucun étudiant ne correspond à votre recherche.
+                </p>
+
+                <a
+                    href="{% url 'gestion:etudiants_liste' %}"
+                    class="btn btn-outline-primary"
+                >
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                    Réinitialiser
+                </a>
+
+            {% else %}
+
+                <p>
+                    Aucun étudiant n'a encore été créé.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}
+Reçu {{ recu.numero }}
+{% endblock %}
+
+{% block page_title %}
+Détail du reçu
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid px-0">
+
+    <!-- ================================================= -->
+    <!-- ACTIONS -->
+    <!-- ================================================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+
+                <i class="bi bi-receipt me-2"></i>
+
+                {{ recu.numero }}
+
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Reçu de paiement
+
+            </p>
+
+        </div>
+        <a href="{% url 'gestion:recu_pdf' recu.pk %}" target="_blank" class="btn btn-primary">
+            <i class="bi bi-file-earmark-pdf me-1"></i>
+            Voir le reçu PDF
+        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'gestion:recus_liste' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Retour
+
+            </a>
+
+            <a href="{% url 'gestion:paiement_detail' recu.paiement.pk %}" class="btn btn-outline-primary">
+
+                <i class="bi bi-credit-card me-1"></i>
+
+                Paiement
+
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- REÇU -->
+    <!-- ================================================= -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body p-4">
+
+            <!-- EN-TÊTE -->
+
+            <div class="text-center mb-4">
+
+                <div class="mb-2">
+
+                    <i class="bi bi-building fs-1 text-primary"></i>
+
+                </div>
+
+                <h3 class="fw-bold mb-1">
+                    UNIVERSITÉ INTERNATIONALE DE COCODY
+                </h3>
+
+                <p class="text-muted mb-0">
+                    Service de la scolarité
+                </p>
+
+                <hr>
+
+                <h4 class="fw-bold mt-3">
+                    REÇU DE PAIEMENT
+                </h4>
+
+            </div>
+
+
+            <!-- INFORMATIONS REÇU -->
+
+            <div class="row g-4 mb-4">
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Numéro du reçu
+                    </div>
+
+                    <div class="fw-bold">
+                        {{ recu.numero }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Référence paiement
+                    </div>
+
+                    <div class="fw-bold">
+                        {{ recu.paiement.reference }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Date d'émission
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ recu.date_emission|date:"d/m/Y à H:i" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Mode de paiement
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ recu.paiement.get_mode_paiement_display }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ÉTUDIANT -->
+
+            <div class="card bg-light border-0 mb-4">
+
+                <div class="card-body">
+
+                    <h6 class="fw-bold mb-3">
+
+                        <i class="bi bi-person-vcard me-2"></i>
+
+                        Informations de l'étudiant
+
+                    </h6>
+
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Nom et prénoms
+                            </div>
+
+                            <div class="fw-bold">
+
+                                {{ recu.paiement.scolarite.inscription.etudiant.candidat.nom }}
+
+                                {{ recu.paiement.scolarite.inscription.etudiant.candidat.prenoms }}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Matricule
+                            </div>
+
+                            <div class="fw-bold">
+
+                                {{ recu.paiement.scolarite.inscription.etudiant.matricule }}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Filière
+                            </div>
+
+                            <div class="fw-semibold">
+
+                                {{ recu.paiement.scolarite.inscription.filiere }}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Niveau
+                            </div>
+
+                            <div class="fw-semibold">
+
+                                {{ recu.paiement.scolarite.inscription.niveau }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAIEMENT -->
+
+            <div class="table-responsive mb-4">
+
+                <table class="table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Description</th>
+
+                            <th class="text-end">
+                                Montant
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr>
+
+                            <td>
+
+                                {% if recu.paiement.echeance %}
+
+                                {{ recu.paiement.echeance.libelle }}
+
+                                {% else %}
+
+                                Paiement de scolarité
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-end fw-bold">
+
+                                {{ recu.paiement.montant|floatformat:2 }}
+                                FCFA
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                    <tfoot>
+
+                        <tr>
+
+                            <th class="text-end">
+                                TOTAL PAYÉ
+                            </th>
+
+                            <th class="text-end fs-5 text-success">
+
+                                {{ recu.paiement.montant|floatformat:2 }}
+                                FCFA
+
+                            </th>
+
+                        </tr>
+
+                    </tfoot>
+
+                </table>
+
+            </div>
+
+
+            {% if recu.observation %}
+
+            <div class="alert alert-info">
+
+                <strong>
+                    Observation :
+                </strong>
+
+                {{ recu.observation }}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- PIED -->
+
+            <div class="text-center text-muted small mt-5">
+
+                <p class="mb-1">
+                    Reçu généré automatiquement par le système de gestion scolaire.
+                </p>
+
+                <p class="mb-0">
+                    {{ recu.numero }}
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

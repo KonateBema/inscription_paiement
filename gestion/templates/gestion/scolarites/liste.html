@@ -1,0 +1,432 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}Scolarités{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-wallet2 me-2 text-primary"></i>
+                Scolarités
+            </h2>
+
+            <p class="text-muted mb-0">
+                Gestion des frais de scolarité des étudiants
+            </p>
+        </div>
+
+        <a href="{% url 'gestion:scolarite_create' %}"
+           class="btn btn-primary">
+
+            <i class="bi bi-plus-circle me-2"></i>
+            Nouvelle scolarité
+
+        </a>
+
+    </div>
+
+
+    <!-- FILTRES -->
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-lg-7">
+
+                        <label class="form-label fw-semibold">
+                            Rechercher
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+
+                            <input
+                                type="text"
+                                name="q"
+                                value="{{ recherche }}"
+                                class="form-control"
+                                placeholder="Matricule, nom, prénom, numéro d'inscription..."
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-lg-3">
+
+                        <label class="form-label fw-semibold">
+                            Statut
+                        </label>
+
+                        <select name="statut" class="form-select">
+
+                            <option value="">
+                                Tous les statuts
+                            </option>
+
+                            {% for valeur, libelle in statuts %}
+
+                                <option
+                                    value="{{ valeur }}"
+                                    {% if statut_selectionne == valeur %}selected{% endif %}
+                                >
+                                    {{ libelle }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-lg-2">
+
+                        <div class="d-flex gap-2">
+
+                            <button type="submit"
+                                    class="btn btn-primary flex-grow-1">
+
+                                <i class="bi bi-search me-1"></i>
+                                Filtrer
+
+                            </button>
+
+                            <a href="{% url 'gestion:scolarites_liste' %}"
+                               class="btn btn-light border"
+                               title="Réinitialiser">
+
+                                <i class="bi bi-arrow-counterclockwise"></i>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABLEAU -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white border-0 py-3">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h5 class="fw-bold mb-1">
+                        Liste des scolarités
+                    </h5>
+
+                    <small class="text-muted">
+                        {{ scolarites|length }}
+                        scolarité{{ scolarites|length|pluralize }}
+                    </small>
+
+                </div>
+
+                <i class="bi bi-wallet2 fs-4 text-primary"></i>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if scolarites %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th class="ps-4">
+                                    Étudiant
+                                </th>
+
+                                <th>
+                                    Inscription
+                                </th>
+
+                                <th>
+                                    Montant net
+                                </th>
+
+                                <th>
+                                    Payé
+                                </th>
+
+                                <th>
+                                    Reste
+                                </th>
+
+                                <th>
+                                    Statut
+                                </th>
+
+                                <th class="text-end pe-4">
+                                    Actions
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for scolarite in scolarites %}
+
+                                <tr>
+
+                                    <!-- ETUDIANT -->
+                                    <td class="ps-4">
+
+                                        <div class="d-flex align-items-center">
+
+                                            <div
+                                                class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center me-3"
+                                                style="width:42px;height:42px;"
+                                            >
+
+                                                <i class="bi bi-person text-primary"></i>
+
+                                            </div>
+
+                                            <div>
+
+                                                <div class="fw-semibold">
+
+                                                    {{ scolarite.inscription.etudiant.candidat.nom }}
+                                                    {{ scolarite.inscription.etudiant.candidat.prenoms }}
+
+                                                </div>
+
+                                                <small class="text-muted">
+
+                                                    {{ scolarite.inscription.etudiant.matricule }}
+
+                                                </small>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <!-- INSCRIPTION -->
+                                    <td>
+
+                                        <div class="fw-semibold">
+
+                                            {{ scolarite.inscription.numero }}
+
+                                        </div>
+
+                                        <small class="text-muted">
+
+                                            {{ scolarite.inscription.annee_academique.libelle }}
+
+                                        </small>
+
+                                    </td>
+
+
+                                    <!-- MONTANT NET -->
+                                    <td>
+
+                                        <span class="fw-bold">
+
+                                            {{ scolarite.montant_net|floatformat:0 }}
+                                            FCFA
+
+                                        </span>
+
+                                        {% if scolarite.remise > 0 %}
+
+                                            <br>
+
+                                            <small class="text-muted">
+
+                                                Remise :
+                                                {{ scolarite.remise|floatformat:0 }}
+                                                FCFA
+
+                                            </small>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- PAYE -->
+                                    <td>
+
+                                        <span class="fw-semibold text-success">
+
+                                            {{ scolarite.montant_paye|floatformat:0 }}
+                                            FCFA
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <!-- RESTE -->
+                                    <td>
+
+                                        {% if scolarite.reste_a_payer > 0 %}
+
+                                            <span class="fw-semibold text-danger">
+
+                                                {{ scolarite.reste_a_payer|floatformat:0 }}
+                                                FCFA
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="fw-semibold text-success">
+
+                                                0 FCFA
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- STATUT -->
+                                    <td>
+
+                                        {% if scolarite.statut == "SOLDEE" %}
+
+                                            <span class="badge bg-success">
+
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Soldée
+
+                                            </span>
+
+                                        {% elif scolarite.statut == "PARTIELLEMENT_PAYEE" %}
+
+                                            <span class="badge bg-warning text-dark">
+
+                                                <i class="bi bi-hourglass-split me-1"></i>
+                                                Partiellement payée
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-secondary">
+
+                                                <i class="bi bi-clock me-1"></i>
+                                                Non payée
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- ACTIONS -->
+                                    <td class="text-end pe-4">
+
+                                        <a
+                                            href="{% url 'gestion:scolarite_detail' scolarite.pk %}"
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Voir le détail"
+                                        >
+
+                                            <i class="bi bi-eye"></i>
+
+                                        </a>
+
+                                        <a
+                                            href="{% url 'gestion:scolarite_update' scolarite.pk %}"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            title="Modifier"
+                                        >
+
+                                            <i class="bi bi-pencil"></i>
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <i class="bi bi-wallet2 fs-1 text-muted"></i>
+
+                    <h5 class="fw-bold mt-3">
+                        Aucune scolarité trouvée
+                    </h5>
+
+                    <p class="text-muted">
+
+                        Aucune scolarité ne correspond aux critères de recherche.
+
+                    </p>
+
+                    <a href="{% url 'gestion:scolarite_create' %}"
+                       class="btn btn-primary">
+
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Créer une scolarité
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

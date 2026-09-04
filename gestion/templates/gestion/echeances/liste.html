@@ -1,0 +1,361 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+Échéances
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-calendar-check me-2 text-primary"></i>
+                Échéances
+            </h2>
+
+            <p class="text-muted mb-0">
+                Gestion des échéances de scolarité
+            </p>
+        </div>
+
+        <a href="{% url 'gestion:echeance_create' %}"
+           class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>
+            Nouvelle échéance
+        </a>
+
+    </div>
+
+
+    <!-- RECHERCHE -->
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-8">
+
+                        <label class="form-label fw-semibold">
+                            Rechercher
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+
+                            <input
+                                type="text"
+                                name="q"
+                                value="{{ recherche }}"
+                                class="form-control"
+                                placeholder="Matricule, nom, prénom, libellé..."
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <div class="d-flex gap-2">
+
+                            <button type="submit"
+                                    class="btn btn-primary flex-grow-1">
+
+                                <i class="bi bi-search me-1"></i>
+                                Rechercher
+
+                            </button>
+
+                            <a href="{% url 'gestion:echeances_liste' %}"
+                               class="btn btn-light border">
+
+                                <i class="bi bi-arrow-counterclockwise"></i>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABLEAU -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white border-0 py-3">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <h5 class="fw-bold mb-0">
+                    Liste des échéances
+                </h5>
+
+                <span class="badge bg-primary-subtle text-primary">
+                    {{ echeances|length }} échéance{{ echeances|length|pluralize }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if echeances %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th class="ps-4">
+                                    N°
+                                </th>
+
+                                <th>
+                                    Étudiant
+                                </th>
+
+                                <th>
+                                    Scolarité
+                                </th>
+
+                                <th>
+                                    Échéance
+                                </th>
+
+                                <th>
+                                    Montant
+                                </th>
+
+                                <th>
+                                    Payé
+                                </th>
+
+                                <th>
+                                    Reste
+                                </th>
+
+                                <th>
+                                    Date
+                                </th>
+
+                                <th>
+                                    Statut
+                                </th>
+
+                                <th class="text-end pe-4">
+                                    Actions
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for echeance in echeances %}
+
+                                <tr>
+
+                                    <td class="ps-4">
+
+                                        <span class="fw-bold">
+                                            {{ echeance.numero }}
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <div class="fw-semibold">
+                                            {{ echeance.scolarite.inscription.etudiant.candidat.nom }}
+                                            {{ echeance.scolarite.inscription.etudiant.candidat.prenoms }}
+                                        </div>
+
+                                        <small class="text-muted">
+                                            {{ echeance.scolarite.inscription.etudiant.matricule }}
+                                        </small>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="fw-semibold">
+                                            {{ echeance.scolarite.inscription.annee_academique.libelle }}
+                                        </span>
+
+                                        <br>
+
+                                        <small class="text-muted">
+                                            {{ echeance.scolarite.inscription.numero }}
+                                        </small>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="fw-semibold">
+                                            {{ echeance.libelle }}
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="fw-bold">
+                                            {{ echeance.montant|floatformat:0 }}
+                                            FCFA
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="text-success fw-semibold">
+                                            {{ echeance.montant_paye|floatformat:0 }}
+                                            FCFA
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="text-danger fw-semibold">
+                                            {{ echeance.reste_a_payer|floatformat:0 }}
+                                            FCFA
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {{ echeance.date_echeance|date:"d/m/Y" }}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if echeance.statut == "PAYEE" %}
+
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Payée
+                                            </span>
+
+                                        {% elif echeance.statut == "EN_COURS" %}
+
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-split me-1"></i>
+                                                En cours
+                                            </span>
+
+                                        {% elif echeance.statut == "EN_RETARD" %}
+
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                En retard
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-secondary">
+                                                À venir
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td class="text-end pe-4">
+
+                                        <a href="{% url 'gestion:echeance_detail' echeance.pk %}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Voir">
+
+                                            <i class="bi bi-eye"></i>
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <div class="mb-3">
+
+                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+
+                    </div>
+
+                    <h5 class="fw-bold">
+                        Aucune échéance trouvée
+                    </h5>
+
+                    <p class="text-muted">
+                        Aucune échéance ne correspond à votre recherche.
+                    </p>
+
+                    <a href="{% url 'gestion:echeance_create' %}"
+                       class="btn btn-primary">
+
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Créer une échéance
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,262 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+    Reçus de paiement
+{% endblock %}
+
+{% block page_title %}
+    Reçus de paiement
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid px-0">
+
+    <!-- ================================================= -->
+    <!-- EN-TÊTE -->
+    <!-- ================================================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-receipt me-2"></i>
+                Reçus de paiement
+            </h2>
+
+            <p class="text-muted mb-0">
+                Consultez et imprimez les reçus générés automatiquement.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- RECHERCHE -->
+    <!-- ================================================= -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-10">
+
+                        <label class="form-label">
+                            Rechercher
+                        </label>
+
+                        <input
+                            type="text"
+                            name="q"
+                            value="{{ recherche }}"
+                            class="form-control"
+                            placeholder="N° reçu, référence paiement, matricule, nom ou prénoms..."
+                        >
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                        >
+                            <i class="bi bi-search me-1"></i>
+                            Rechercher
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- TABLEAU -->
+    <!-- ================================================= -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Reçu</th>
+
+                            <th>Paiement</th>
+
+                            <th>Étudiant</th>
+
+                            <th>Matricule</th>
+
+                            <th>Montant</th>
+
+                            <th>Mode</th>
+
+                            <th>Date</th>
+
+                            <th class="text-end">
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for recu in recus %}
+
+                        <tr>
+
+                            <td>
+
+                                <span class="fw-bold text-primary">
+                                    {{ recu.numero }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="badge bg-success-subtle text-success">
+                                    {{ recu.paiement.reference }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="fw-semibold">
+
+                                    {{ recu.paiement.scolarite.inscription.etudiant.candidat.nom }}
+
+                                    {{ recu.paiement.scolarite.inscription.etudiant.candidat.prenoms }}
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ recu.paiement.scolarite.inscription.etudiant.matricule }}
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="fw-bold">
+
+                                    {{ recu.paiement.montant|floatformat:2 }}
+
+                                    FCFA
+
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ recu.paiement.get_mode_paiement_display }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ recu.date_emission|date:"d/m/Y H:i" }}
+
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="btn-group">
+
+                                    <a
+                                        href="{% url 'gestion:recu_detail' recu.pk %}"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Voir le reçu"
+                                    >
+
+                                        <i class="bi bi-eye"></i>
+
+                                    </a>
+
+
+                                    <a
+                                        href="{% url 'gestion:paiement_detail' recu.paiement.pk %}"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        title="Voir le paiement"
+                                    >
+
+                                        <i class="bi bi-credit-card"></i>
+
+                                    </a>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="8"
+                                class="text-center py-5"
+                            >
+
+                                <i
+                                    class="bi bi-receipt fs-1 text-muted"
+                                ></i>
+
+                                <p class="mt-3 mb-0 text-muted">
+                                    Aucun reçu trouvé.
+                                </p>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

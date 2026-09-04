@@ -1,0 +1,1457 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<meta name="theme-color" content="#16203a">
+
+<title>Connexion | Gestion Scolarité</title>
+
+<!-- Bootstrap -->
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
+
+<!-- Bootstrap Icons -->
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+    rel="stylesheet"
+>
+
+<style>
+
+    :root {
+
+        --navy: #1f2a44;
+        --navy-dark: #111a30;
+        --navy-deep: #0d1528;
+
+        --gold: #b89552;
+        --gold-light: #dbc48f;
+
+        --white: #ffffff;
+        --paper: #faf9f6;
+
+        --text: #202938;
+        --text-soft: #697386;
+        --border: #dedbd3;
+
+        --danger: #b33a3a;
+
+    }
+
+
+    * {
+        box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+    }
+
+
+    body {
+
+        min-height: 100vh;
+
+        font-family: "DM Sans", sans-serif;
+
+        background:
+            radial-gradient(
+                circle at 20% 20%,
+                rgba(184, 149, 82, .12),
+                transparent 30%
+            ),
+            var(--navy-deep);
+
+        color: var(--text);
+
+    }
+
+
+    /* =========================================================
+       MAIN WRAPPER
+    ========================================================= */
+
+    .login-wrapper {
+
+        min-height: 100vh;
+
+        display: flex;
+
+        overflow: hidden;
+
+        background: var(--navy-deep);
+
+    }
+
+
+    /* =========================================================
+       LEFT PANEL
+    ========================================================= */
+
+    .brand-panel {
+
+        position: relative;
+
+        flex: 0 0 48%;
+
+        min-height: 100vh;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: space-between;
+
+        padding: 54px 64px;
+
+        overflow: hidden;
+
+        color: white;
+
+        background:
+
+            radial-gradient(
+                circle at 15% 20%,
+                rgba(184, 149, 82, .16),
+                transparent 32%
+            ),
+
+            radial-gradient(
+                circle at 90% 80%,
+                rgba(255,255,255,.05),
+                transparent 35%
+            ),
+
+            linear-gradient(
+                145deg,
+                #18233e 0%,
+                #111a30 100%
+            );
+
+    }
+
+
+    /* Decorative circles */
+
+    .brand-panel::before {
+
+        content: "";
+
+        position: absolute;
+
+        width: 420px;
+        height: 420px;
+
+        right: -220px;
+        top: -180px;
+
+        border: 1px solid rgba(219,196,143,.16);
+
+        border-radius: 50%;
+
+    }
+
+
+    .brand-panel::after {
+
+        content: "";
+
+        position: absolute;
+
+        width: 600px;
+        height: 600px;
+
+        left: -420px;
+        bottom: -350px;
+
+        border: 1px solid rgba(219,196,143,.08);
+
+        border-radius: 50%;
+
+    }
+
+
+    /* =========================================================
+       BRAND
+    ========================================================= */
+
+    .brand-mark {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+
+    }
+
+
+    .brand-seal {
+
+        width: 52px;
+        height: 52px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        border: 1px solid rgba(219,196,143,.7);
+
+        color: var(--gold-light);
+
+        background: rgba(255,255,255,.025);
+
+        box-shadow:
+            0 0 0 6px rgba(184,149,82,.035);
+
+    }
+
+
+    .brand-seal i {
+
+        font-size: 22px;
+
+    }
+
+
+    .brand-name {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 2px;
+
+    }
+
+
+    .brand-name strong {
+
+        font-size: 15px;
+
+        font-weight: 700;
+
+        letter-spacing: .01em;
+
+        color: white;
+
+    }
+
+
+    .brand-name span {
+
+        font-size: 11px;
+
+        color: #9ca6b8;
+
+        letter-spacing: .08em;
+
+        text-transform: uppercase;
+
+    }
+
+
+    /* =========================================================
+       BRAND CONTENT
+    ========================================================= */
+
+    .brand-content {
+
+        position: relative;
+
+        z-index: 2;
+
+        max-width: 500px;
+
+    }
+
+
+    .brand-badge {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        padding: 7px 12px;
+
+        margin-bottom: 22px;
+
+        border: 1px solid rgba(219,196,143,.22);
+
+        border-radius: 50px;
+
+        background: rgba(255,255,255,.035);
+
+        color: var(--gold-light);
+
+        font-size: 11px;
+
+        font-weight: 600;
+
+        letter-spacing: .07em;
+
+        text-transform: uppercase;
+
+    }
+
+
+    .brand-badge span {
+
+        width: 6px;
+        height: 6px;
+
+        border-radius: 50%;
+
+        background: var(--gold-light);
+
+    }
+
+
+    .brand-content h1 {
+
+        margin: 0 0 22px;
+
+        font-family: "Playfair Display", serif;
+
+        font-size: clamp(36px, 4vw, 54px);
+
+        font-weight: 600;
+
+        line-height: 1.12;
+
+        letter-spacing: -.025em;
+
+        color: #ffffff;
+
+    }
+
+
+    .brand-content h1 em {
+
+        font-style: normal;
+
+        color: var(--gold-light);
+
+    }
+
+
+    .brand-content p {
+
+        max-width: 440px;
+
+        margin: 0;
+
+        color: #aeb6c5;
+
+        font-size: 15px;
+
+        line-height: 1.8;
+
+    }
+
+
+    /* =========================================================
+       FEATURES
+    ========================================================= */
+
+    .brand-features {
+
+        display: flex;
+
+        gap: 24px;
+
+        margin-top: 34px;
+
+    }
+
+
+    .feature {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 9px;
+
+        color: #9ca6b8;
+
+        font-size: 12px;
+
+    }
+
+
+    .feature i {
+
+        color: var(--gold-light);
+
+        font-size: 14px;
+
+    }
+
+
+    /* =========================================================
+       FOOTER
+    ========================================================= */
+
+    .brand-footer {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        padding-top: 25px;
+
+        border-top: 1px solid rgba(255,255,255,.07);
+
+        color: #687388;
+
+        font-size: 11px;
+
+    }
+
+
+    .brand-footer span:last-child {
+
+        color: #7d8799;
+
+    }
+
+
+    /* =========================================================
+       RIGHT PANEL
+    ========================================================= */
+
+    .form-panel {
+
+        flex: 1;
+
+        min-height: 100vh;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 50px 30px;
+
+        background: var(--paper);
+
+    }
+
+
+    .login-card {
+
+        width: 100%;
+
+        max-width: 420px;
+
+    }
+
+
+    /* =========================================================
+       FORM HEADER
+    ========================================================= */
+
+    .login-kicker {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-bottom: 9px;
+
+        color: var(--gold);
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        letter-spacing: .08em;
+
+        text-transform: uppercase;
+
+    }
+
+
+    .login-kicker::before {
+
+        content: "";
+
+        width: 24px;
+        height: 1px;
+
+        background: var(--gold);
+
+    }
+
+
+    .login-title {
+
+        margin: 0;
+
+        color: var(--navy-deep);
+
+        font-family: "Playfair Display", serif;
+
+        font-size: 34px;
+
+        font-weight: 600;
+
+        letter-spacing: -.02em;
+
+    }
+
+
+    .login-subtitle {
+
+        margin: 9px 0 30px;
+
+        color: var(--text-soft);
+
+        font-size: 14px;
+
+        line-height: 1.6;
+
+    }
+
+
+    /* =========================================================
+       ERROR
+    ========================================================= */
+
+    .error-box {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 10px;
+
+        margin-bottom: 24px;
+
+        padding: 13px 14px;
+
+        border: 1px solid #e8c4c4;
+
+        border-left: 3px solid var(--danger);
+
+        border-radius: 7px;
+
+        background: #fff7f7;
+
+        color: #8c3030;
+
+        font-size: 13px;
+
+        line-height: 1.5;
+
+    }
+
+
+    .error-box i {
+
+        margin-top: 1px;
+
+    }
+
+
+    /* =========================================================
+       FORM GROUP
+    ========================================================= */
+
+    .form-group {
+
+        margin-bottom: 21px;
+
+    }
+
+
+    .form-label {
+
+        display: block;
+
+        margin-bottom: 8px;
+
+        color: var(--text);
+
+        font-size: 13px;
+
+        font-weight: 700;
+
+    }
+
+
+    .input-wrapper {
+
+        position: relative;
+
+    }
+
+
+    .input-icon {
+
+        position: absolute;
+
+        left: 15px;
+
+        top: 50%;
+
+        z-index: 3;
+
+        transform: translateY(-50%);
+
+        color: #8b94a4;
+
+        font-size: 17px;
+
+        pointer-events: none;
+
+    }
+
+
+    .form-control {
+
+        width: 100%;
+
+        height: 52px;
+
+        padding: 0 16px 0 46px;
+
+        border: 1px solid var(--border);
+
+        border-radius: 8px;
+
+        background: white;
+
+        color: var(--text);
+
+        font-family: inherit;
+
+        font-size: 14px;
+
+        outline: none;
+
+        transition:
+            border-color .2s ease,
+            box-shadow .2s ease,
+            background .2s ease;
+
+    }
+
+
+    .form-control::placeholder {
+
+        color: #aab1bd;
+
+    }
+
+
+    .form-control:hover {
+
+        border-color: #c9c5bb;
+
+    }
+
+
+    .form-control:focus {
+
+        border-color: var(--navy);
+
+        background: white;
+
+        box-shadow:
+            0 0 0 4px rgba(31,42,68,.08);
+
+    }
+
+
+    .input-wrapper:focus-within .input-icon {
+
+        color: var(--navy);
+
+    }
+
+
+    /* =========================================================
+       PASSWORD BUTTON
+    ========================================================= */
+
+    .password-toggle {
+
+        position: absolute;
+
+        right: 5px;
+        top: 5px;
+
+        width: 42px;
+        height: 42px;
+
+        border: none;
+
+        border-radius: 6px;
+
+        background: transparent;
+
+        color: #8992a1;
+
+        cursor: pointer;
+
+        transition:
+            background .2s ease,
+            color .2s ease;
+
+    }
+
+
+    .password-toggle:hover {
+
+        background: #f1f0ec;
+
+        color: var(--navy);
+
+    }
+
+
+    /* =========================================================
+       SUBMIT
+    ========================================================= */
+
+    .btn-login {
+
+        position: relative;
+
+        width: 100%;
+
+        height: 52px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 9px;
+
+        margin-top: 7px;
+
+        border: none;
+
+        border-radius: 8px;
+
+        background: var(--navy);
+
+        color: white;
+
+        font-family: inherit;
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        overflow: hidden;
+
+        transition:
+            transform .2s ease,
+            background .2s ease,
+            box-shadow .2s ease;
+
+    }
+
+
+    .btn-login::before {
+
+        content: "";
+
+        position: absolute;
+
+        inset: 0;
+
+        background:
+            linear-gradient(
+                110deg,
+                transparent 30%,
+                rgba(255,255,255,.10) 50%,
+                transparent 70%
+            );
+
+        transform: translateX(-100%);
+
+        transition: transform .6s ease;
+
+    }
+
+
+    .btn-login:hover {
+
+        background: var(--navy-deep);
+
+        transform: translateY(-1px);
+
+        box-shadow:
+            0 8px 20px rgba(17,26,48,.18);
+
+    }
+
+
+    .btn-login:hover::before {
+
+        transform: translateX(100%);
+
+    }
+
+
+    .btn-login:active {
+
+        transform: translateY(0);
+
+    }
+
+
+    .btn-login i {
+
+        font-size: 16px;
+
+    }
+
+
+    /* =========================================================
+       SECURITY NOTE
+    ========================================================= */
+
+    .security-note {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 7px;
+
+        margin-top: 22px;
+
+        color: #8a92a0;
+
+        font-size: 11.5px;
+
+    }
+
+
+    .security-note i {
+
+        color: #6e8b71;
+
+    }
+
+
+    /* =========================================================
+       FOOTER RIGHT
+    ========================================================= */
+
+    .login-footer {
+
+        margin-top: 34px;
+
+        padding-top: 18px;
+
+        border-top: 1px solid #e9e6df;
+
+        text-align: center;
+
+        color: #8b929e;
+
+        font-size: 11.5px;
+
+    }
+
+
+    /* =========================================================
+       RESPONSIVE TABLET
+    ========================================================= */
+
+    @media (max-width: 900px) {
+
+        .brand-panel {
+
+            flex-basis: 44%;
+
+            padding: 42px 38px;
+
+        }
+
+        .brand-content h1 {
+
+            font-size: 38px;
+
+        }
+
+        .brand-features {
+
+            flex-direction: column;
+
+            gap: 10px;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       RESPONSIVE MOBILE
+    ========================================================= */
+
+    @media (max-width: 720px) {
+
+        .login-wrapper {
+
+            flex-direction: column;
+
+        }
+
+
+        .brand-panel {
+
+            min-height: auto;
+
+            padding: 28px 24px 30px;
+
+        }
+
+
+        .brand-content {
+
+            margin-top: 50px;
+
+        }
+
+
+        .brand-content h1 {
+
+            font-size: 34px;
+
+        }
+
+
+        .brand-content p {
+
+            font-size: 14px;
+
+        }
+
+
+        .brand-features {
+
+            display: none;
+
+        }
+
+
+        .brand-footer {
+
+            margin-top: 45px;
+
+        }
+
+
+        .form-panel {
+
+            min-height: auto;
+
+            padding: 42px 24px 45px;
+
+        }
+
+
+        .login-card {
+
+            max-width: 460px;
+
+        }
+
+    }
+
+
+    @media (max-width: 420px) {
+
+        .brand-panel {
+
+            padding: 24px 20px 26px;
+
+        }
+
+
+        .brand-seal {
+
+            width: 46px;
+            height: 46px;
+
+        }
+
+
+        .brand-content {
+
+            margin-top: 42px;
+
+        }
+
+
+        .brand-content h1 {
+
+            font-size: 30px;
+
+        }
+
+
+        .form-panel {
+
+            padding: 36px 20px 40px;
+
+        }
+
+
+        .login-title {
+
+            font-size: 30px;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       ACCESSIBILITY
+    ========================================================= */
+
+    .btn-login:focus-visible,
+    .password-toggle:focus-visible {
+
+        outline: 2px solid var(--gold);
+
+        outline-offset: 3px;
+
+    }
+
+
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+
+            scroll-behavior: auto !important;
+
+            transition: none !important;
+
+            animation: none !important;
+
+        }
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="login-wrapper">
+
+<!-- =========================================================
+     LEFT : IDENTITÉ
+========================================================= -->
+
+<section class="brand-panel">
+
+
+    <!-- BRAND -->
+
+    <div class="brand-mark">
+
+        <div class="brand-seal">
+
+            <i class="bi bi-mortarboard-fill"></i>
+
+        </div>
+
+
+        <div class="brand-name">
+
+            <strong>Gestion Scolarité</strong>
+
+            <span>Plateforme administrative</span>
+
+        </div>
+
+    </div>
+
+
+    <!-- CONTENT -->
+
+    <div class="brand-content">
+
+
+        <div class="brand-badge">
+
+            <span></span>
+
+            Espace sécurisé
+
+        </div>
+
+
+        <h1>
+
+            Gérez votre
+
+            <em>scolarité</em>
+
+            simplement.
+
+        </h1>
+
+
+        <p>
+
+            Une plateforme centralisée pour gérer les
+            inscriptions, les étudiants, les notes,
+            les classes et le suivi des cursus
+            au sein de votre établissement.
+
+        </p>
+
+
+        <div class="brand-features">
+
+            <div class="feature">
+
+                <i class="bi bi-shield-check"></i>
+
+                <span>Accès sécurisé</span>
+
+            </div>
+
+
+            <div class="feature">
+
+                <i class="bi bi-people"></i>
+
+                <span>Gestion étudiants</span>
+
+            </div>
+
+
+            <div class="feature">
+
+                <i class="bi bi-bar-chart"></i>
+
+                <span>Suivi académique</span>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- FOOTER -->
+
+    <div class="brand-footer">
+
+        <span>
+            © 2026 Gestion Scolarité
+        </span>
+
+        <span>
+            Administration académique
+        </span>
+
+    </div>
+
+
+</section>
+
+
+<!-- =========================================================
+     RIGHT : CONNEXION
+========================================================= -->
+
+<section class="form-panel">
+
+
+    <div class="login-card">
+
+
+        <!-- HEADER -->
+
+        <div class="login-kicker">
+
+            Accès personnel
+
+        </div>
+
+
+        <h2 class="login-title">
+
+            Bienvenue
+
+        </h2>
+
+
+        <p class="login-subtitle">
+
+            Connectez-vous à votre espace de gestion
+            pour continuer.
+
+        </p>
+
+
+        <!-- ERREUR -->
+
+        {% if form.errors %}
+
+            <div class="error-box">
+
+                <i class="bi bi-exclamation-circle-fill"></i>
+
+                <div>
+
+                    <strong>Connexion impossible.</strong><br>
+
+                    Nom d'utilisateur ou mot de passe incorrect.
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- FORMULAIRE -->
+
+        <form method="post">
+
+            {% csrf_token %}
+
+
+            <!-- USERNAME -->
+
+            <div class="form-group">
+
+                <label
+                    for="id_username"
+                    class="form-label"
+                >
+                    Nom d'utilisateur
+                </label>
+
+
+                <div class="input-wrapper">
+
+                    <i class="bi bi-person input-icon"></i>
+
+
+                    <input
+                        type="text"
+                        name="username"
+                        id="id_username"
+                        class="form-control"
+                        placeholder="Entrez votre nom d'utilisateur"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- PASSWORD -->
+
+            <div class="form-group">
+
+                <label
+                    for="id_password"
+                    class="form-label"
+                >
+                    Mot de passe
+                </label>
+
+
+                <div class="input-wrapper">
+
+                    <i class="bi bi-lock input-icon"></i>
+
+
+                    <input
+                        type="password"
+                        name="password"
+                        id="id_password"
+                        class="form-control"
+                        placeholder="Entrez votre mot de passe"
+                        autocomplete="current-password"
+                        required
+                    >
+
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        id="togglePassword"
+                        aria-label="Afficher le mot de passe"
+                    >
+
+                        <i class="bi bi-eye"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- BUTTON -->
+
+            <button
+                type="submit"
+                class="btn-login"
+            >
+
+                <i class="bi bi-box-arrow-in-right"></i>
+
+                <span>Se connecter</span>
+
+            </button>
+
+
+        </form>
+
+
+        <!-- SECURITY -->
+
+        <div class="security-note">
+
+            <i class="bi bi-shield-lock-fill"></i>
+
+            Vos informations sont protégées
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="login-footer">
+
+            Besoin d'aide ?
+            Contactez le service de scolarité.
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+</div>
+
+<!-- =========================================================
+     PASSWORD TOGGLE
+========================================================= -->
+
+<script>
+
+    const passwordInput =
+        document.getElementById("id_password");
+
+    const togglePassword =
+        document.getElementById("togglePassword");
+
+    if (passwordInput && togglePassword) {
+
+        togglePassword.addEventListener("click", function () {
+
+            const icon =
+                this.querySelector("i");
+
+            const isPassword =
+                passwordInput.type === "password";
+
+
+            passwordInput.type =
+                isPassword ? "text" : "password";
+
+
+            icon.classList.toggle(
+                "bi-eye",
+                !isPassword
+            );
+
+            icon.classList.toggle(
+                "bi-eye-slash",
+                isPassword
+            );
+
+
+            this.setAttribute(
+                "aria-label",
+                isPassword
+                    ? "Masquer le mot de passe"
+                    : "Afficher le mot de passe"
+            );
+
+        });
+
+    }
+
+</script>
+
+</body>
+
+</html>

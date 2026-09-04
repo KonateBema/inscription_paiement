@@ -1,0 +1,200 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}
+{{ titre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+<div class="row justify-content-center">
+
+    <div class="col-xl-8 col-lg-10">
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-header bg-primary text-white py-3">
+
+                <h4 class="mb-0 fw-bold">
+
+                    <i class="bi bi-file-earmark-plus me-2"></i>
+
+                    {{ titre }}
+
+                </h4>
+
+            </div>
+
+
+            <div class="card-body p-4">
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+
+                    {% if form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+
+                            {{ form.non_field_errors }}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <div class="row g-4">
+
+
+                        <!-- CANDIDAT -->
+                        <div class="col-md-12">
+
+                            <label class="form-label fw-semibold">
+                                Candidat
+                            </label>
+
+                            {{ form.candidat }}
+
+                            {% if form.candidat.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.candidat.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ANNÉE -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Année académique
+                            </label>
+
+                            {{ form.annee_academique }}
+
+                            {% if form.annee_academique.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.annee_academique.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- FILIÈRE -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Filière
+                            </label>
+
+                            {{ form.filiere }}
+
+                            {% if form.filiere.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.filiere.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- NIVEAU -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Niveau
+                            </label>
+
+                            {{ form.niveau }}
+
+                            {% if form.niveau.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.niveau.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- STATUT -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Statut
+                            </label>
+
+                            {{ form.statut }}
+
+                            {% if form.statut.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.statut.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- OBSERVATION -->
+                        <div class="col-12">
+
+                            <label class="form-label fw-semibold">
+                                Observation
+                            </label>
+
+                            {{ form.observation }}
+
+                            {% if form.observation.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.observation.errors }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <hr class="my-4">
+
+
+                    <div class="d-flex justify-content-between">
+
+                        <a
+                            href="{% url 'gestion:preinscription_liste' %}"
+                            class="btn btn-outline-secondary"
+                        >
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Annuler
+                        </a>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary px-4"
+                        >
+
+                            <i class="bi bi-check-circle me-1"></i>
+
+                            {{ bouton }}
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+{% endblock %}

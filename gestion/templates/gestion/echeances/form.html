@@ -1,0 +1,275 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+{{ titre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-calendar-plus me-2 text-primary"></i>
+                {{ titre }}
+            </h2>
+
+            <p class="text-muted mb-0">
+                Configurez l'échéance de paiement
+            </p>
+
+        </div>
+
+        <a href="{% url 'gestion:echeances_liste' %}"
+           class="btn btn-light border">
+
+            <i class="bi bi-arrow-left me-2"></i>
+            Retour
+
+        </a>
+
+    </div>
+
+
+    <!-- FORMULAIRE -->
+    <div class="row justify-content-center">
+
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white py-3">
+
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>
+                        Informations de l'échéance
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body p-4">
+
+                    {% if form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <form method="post">
+
+                        {% csrf_token %}
+
+
+                        <!-- SCOLARITE -->
+                        <div class="mb-4">
+
+                            <label for="{{ form.scolarite.id_for_label }}"
+                                   class="form-label fw-semibold">
+
+                                {{ form.scolarite.label }}
+
+                            </label>
+
+                            {{ form.scolarite }}
+
+                            {% if form.scolarite.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {% for error in form.scolarite.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="row g-3">
+
+
+                            <!-- NUMERO -->
+                            <div class="col-md-4">
+
+                                <label for="{{ form.numero.id_for_label }}"
+                                       class="form-label fw-semibold">
+
+                                    {{ form.numero.label }}
+
+                                </label>
+
+                                {{ form.numero }}
+
+                                {% if form.numero.errors %}
+
+                                    <div class="text-danger small mt-1">
+
+                                        {% for error in form.numero.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- LIBELLE -->
+                            <div class="col-md-8">
+
+                                <label for="{{ form.libelle.id_for_label }}"
+                                       class="form-label fw-semibold">
+
+                                    {{ form.libelle.label }}
+
+                                </label>
+
+                                {{ form.libelle }}
+
+                                {% if form.libelle.errors %}
+
+                                    <div class="text-danger small mt-1">
+
+                                        {% for error in form.libelle.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- MONTANT -->
+                            <div class="col-md-6">
+
+                                <label for="{{ form.montant.id_for_label }}"
+                                       class="form-label fw-semibold">
+
+                                    {{ form.montant.label }}
+
+                                </label>
+
+                                {{ form.montant }}
+
+                                {% if form.montant.errors %}
+
+                                    <div class="text-danger small mt-1">
+
+                                        {% for error in form.montant.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- DATE -->
+                            <div class="col-md-6">
+
+                                <label for="{{ form.date_echeance.id_for_label }}"
+                                       class="form-label fw-semibold">
+
+                                    {{ form.date_echeance.label }}
+
+                                </label>
+
+                                {{ form.date_echeance }}
+
+                                {% if form.date_echeance.errors %}
+
+                                    <div class="text-danger small mt-1">
+
+                                        {% for error in form.date_echeance.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- INFO -->
+                        <div class="alert alert-info mt-4">
+
+                            <div class="d-flex">
+
+                                <i class="bi bi-info-circle-fill me-2"></i>
+
+                                <div>
+
+                                    <strong>Information</strong>
+
+                                    <div class="small mt-1">
+
+                                        Le montant de cette échéance sera suivi
+                                        automatiquement lors de l'enregistrement
+                                        des paiements.
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ACTIONS -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+
+                            <a href="{% url 'gestion:echeances_liste' %}"
+                               class="btn btn-light border">
+
+                                Annuler
+
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary px-4">
+
+                                <i class="bi bi-check-circle me-2"></i>
+                                {{ bouton }}
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

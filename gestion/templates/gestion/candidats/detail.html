@@ -1,0 +1,577 @@
+{% extends "gestion/base.html" %}
+
+
+{% block title %}
+    {{ candidat.nom }} {{ candidat.prenoms }} | Gestion Scolarité
+{% endblock %}
+
+
+{% block page_title %}
+    Fiche candidat
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+    .profile-header {
+        padding: 30px;
+        background: linear-gradient(
+            135deg,
+            #2563eb,
+            #1d4ed8
+        );
+        color: white;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .profile-photo {
+        width: 110px;
+        height: 110px;
+        object-fit: cover;
+        border-radius: 15px;
+        border: 4px solid rgba(255,255,255,.35);
+    }
+
+    .profile-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 15px;
+        background: rgba(255,255,255,.15);
+        border: 4px solid rgba(255,255,255,.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 45px;
+    }
+
+    .profile-name {
+        font-size: 27px;
+        font-weight: 700;
+    }
+
+    .profile-matricule {
+        opacity: .85;
+    }
+
+    .candidate-section {
+        padding: 25px;
+    }
+
+    .section-title {
+        font-size: 17px;
+        font-weight: 700;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    .info-label {
+        color: #6b7280;
+        font-size: 13px;
+        margin-bottom: 3px;
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .info-box {
+        padding: 12px 15px;
+        background: #f8fafc;
+        border-radius: 9px;
+        height: 100%;
+    }
+
+    @media (max-width: 576px) {
+
+        .profile-header {
+            text-align: center;
+        }
+
+        .profile-header .d-flex {
+            justify-content: center;
+        }
+
+        .profile-name {
+            font-size: 22px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- =========================
+     RETOUR
+========================== -->
+
+<div class="mb-3">
+
+    <a
+        href="{% url 'gestion:candidats_liste' %}"
+        class="text-decoration-none text-muted"
+    >
+
+        <i class="bi bi-arrow-left me-1"></i>
+
+        Retour aux candidats
+
+    </a>
+
+</div>
+
+
+<!-- =========================
+     FICHE CANDIDAT
+========================== -->
+
+<div class="card page-card">
+
+
+    <!-- =========================
+         PROFIL
+    ========================== -->
+
+    <div class="profile-header">
+
+        <div class="d-flex flex-wrap align-items-center gap-4">
+
+
+            {% if candidat.photo %}
+
+                <img
+                    src="{{ candidat.photo.url }}"
+                    alt="Photo de {{ candidat.nom }}"
+                    class="profile-photo"
+                >
+
+            {% else %}
+
+                <div class="profile-placeholder">
+
+                    <i class="bi bi-person"></i>
+
+                </div>
+
+            {% endif %}
+
+
+            <div>
+
+                <div class="profile-name">
+
+                    {{ candidat.nom }}
+                    {{ candidat.prenoms }}
+
+                </div>
+
+
+                <div class="profile-matricule">
+
+                    {{ candidat.matricule_candidat }}
+
+                </div>
+
+
+                <div class="mt-2">
+
+                    {% if candidat.actif %}
+
+                        <span class="badge bg-success">
+
+                            <i class="bi bi-check-circle me-1"></i>
+
+                            Candidat actif
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge bg-secondary">
+
+                            <i class="bi bi-dash-circle me-1"></i>
+
+                            Candidat inactif
+
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         INFORMATIONS
+    ========================== -->
+
+    <div class="candidate-section">
+
+
+        <!-- =========================
+             INFORMATIONS PERSONNELLES
+        ========================== -->
+
+        <h5 class="section-title">
+
+            <i class="bi bi-person-vcard text-primary me-2"></i>
+
+            Informations personnelles
+
+        </h5>
+
+
+        <div class="row g-3 mb-4">
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Nom
+                    </div>
+
+                    <div class="info-value">
+                        {{ candidat.nom }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Prénoms
+                    </div>
+
+                    <div class="info-value">
+                        {{ candidat.prenoms }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Sexe
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.get_sexe_display|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Date de naissance
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.date_naissance|date:"d/m/Y"|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Lieu de naissance
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.lieu_naissance|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Nationalité
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.nationalite|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             COORDONNÉES
+        ========================== -->
+
+        <h5 class="section-title">
+
+            <i class="bi bi-telephone text-primary me-2"></i>
+
+            Coordonnées
+
+        </h5>
+
+
+        <div class="row g-3 mb-4">
+
+
+            <div class="col-md-6">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Téléphone
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.telephone|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Email
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.email|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-8">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Adresse
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.adresse|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Ville
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.ville|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             PARCOURS SCOLAIRE
+        ========================== -->
+
+        <h5 class="section-title">
+
+            <i class="bi bi-mortarboard text-primary me-2"></i>
+
+            Parcours scolaire
+
+        </h5>
+
+
+        <div class="row g-3">
+
+
+            <div class="col-md-6">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Dernier diplôme
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.dernier_diplome|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Série
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.serie_diplome|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Année d'obtention
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.annee_obtention|default:"Non renseignée" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-12">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        Établissement d'origine
+                    </div>
+
+                    <div class="info-value">
+
+                        {{ candidat.etablissement_origine|default:"Non renseigné" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             ACTIONS
+        ========================== -->
+
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4 pt-4 border-top">
+
+
+            <a
+                href="{% url 'gestion:candidats_liste' %}"
+                class="btn btn-light border"
+            >
+
+                <i class="bi bi-arrow-left me-1"></i>
+
+                Retour
+
+            </a>
+
+            <a
+                href="{% url 'gestion:candidat_modifier' candidat.pk %}"
+                class="btn btn-warning"
+            >
+
+                <i class="bi bi-pencil me-1"></i>
+
+                Modifier
+
+            </a>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+{% endblock %}

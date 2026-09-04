@@ -1,0 +1,513 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}
+{{ etudiant.candidat.nom }} {{ etudiant.candidat.prenoms }} | Gestion Scolarité
+{% endblock %}
+
+{% block page_title %}
+Fiche étudiant
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+    .profile-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 5px 20px rgba(0,0,0,.05);
+        overflow: hidden;
+    }
+
+    .profile-header {
+        padding: 30px;
+        background: linear-gradient(
+            135deg,
+            #f8f9ff,
+            #ffffff
+        );
+        border-bottom: 1px solid #eee;
+    }
+
+    .profile-photo {
+        width: 110px;
+        height: 110px;
+        border-radius: 20px;
+        object-fit: cover;
+    }
+
+    .profile-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 45px;
+    }
+
+    .profile-name {
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .student-code {
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .section-card {
+        border: 1px solid #e9ecef;
+        border-radius: 15px;
+        background: #fff;
+    }
+
+    .section-title {
+        font-weight: 700;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .info-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .info-value {
+        font-weight: 500;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="mb-3">
+
+    <a
+        href="{% url 'gestion:etudiants_liste' %}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Retour aux étudiants
+    </a>
+
+</div>
+
+
+<div class="profile-card">
+
+    <!-- HEADER -->
+    <div class="profile-header">
+
+        <div class="d-flex align-items-center gap-4 flex-wrap">
+
+            {% if etudiant.candidat.photo %}
+
+                <img
+                    src="{{ etudiant.candidat.photo.url }}"
+                    alt="{{ etudiant.candidat.nom }}"
+                    class="profile-photo"
+                >
+
+            {% else %}
+
+                <div class="profile-placeholder">
+
+                    <i class="bi bi-person-fill"></i>
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="flex-grow-1">
+
+                <div class="profile-name">
+
+                    {{ etudiant.candidat.nom }}
+                    {{ etudiant.candidat.prenoms }}
+
+                </div>
+
+                <div class="student-code">
+
+                    <i class="bi bi-person-badge me-1"></i>
+
+                    {{ etudiant.matricule }}
+
+                </div>
+
+                <div class="mt-2">
+
+                    {% if etudiant.actif %}
+
+                        <span class="badge bg-success">
+                            Étudiant actif
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge bg-secondary">
+                            Étudiant inactif
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="p-4">
+
+        <!-- INFORMATIONS -->
+        <div class="section-card p-4 mb-4">
+
+            <div class="section-title">
+
+                <i class="bi bi-person-vcard me-2"></i>
+
+                Informations personnelles
+
+            </div>
+
+
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Matricule étudiant
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.matricule }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Matricule candidat
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.matricule_candidat }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Sexe
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.get_sexe_display }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Date de naissance
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.date_naissance|date:"d/m/Y" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Lieu de naissance
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.lieu_naissance }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Nationalité
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.nationalite }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Téléphone
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.telephone|default:"—" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Email
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.email|default:"—" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Ville
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.ville|default:"—" }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DIPLOME -->
+        <div class="section-card p-4 mb-4">
+
+            <div class="section-title">
+
+                <i class="bi bi-mortarboard-fill me-2"></i>
+
+                Formation d'origine
+
+            </div>
+
+
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Dernier diplôme
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.dernier_diplome|default:"—" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Série
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.serie_diplome|default:"—" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="info-label">
+                        Année d'obtention
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.annee_obtention|default:"—" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-12">
+
+                    <div class="info-label">
+                        Établissement d'origine
+                    </div>
+
+                    <div class="info-value">
+                        {{ etudiant.candidat.etablissement_origine|default:"—" }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- INSCRIPTIONS -->
+        <div class="section-card p-4">
+
+            <div class="section-title">
+
+                <i class="bi bi-journal-check me-2"></i>
+
+                Historique des inscriptions
+
+            </div>
+
+
+            {% if inscriptions %}
+
+                <div class="table-responsive">
+
+                    <table class="table align-middle">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Numéro
+                                </th>
+
+                                <th>
+                                    Année
+                                </th>
+
+                                <th>
+                                    Filière
+                                </th>
+
+                                <th>
+                                    Niveau
+                                </th>
+
+                                <th>
+                                    Classe
+                                </th>
+
+                                <th>
+                                    Statut
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for inscription in inscriptions %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ inscription.numero }}
+                                    </td>
+
+                                    <td>
+                                        {{ inscription.annee_academique.libelle }}
+                                    </td>
+
+                                    <td>
+                                        {{ inscription.filiere.nom }}
+                                    </td>
+
+                                    <td>
+                                        {{ inscription.niveau.nom }}
+                                    </td>
+
+                                    <td>
+                                        {{ inscription.classe.nom }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if inscription.statut == "INSCRIT" %}
+
+                                            <span class="badge bg-success">
+                                                Inscrit
+                                            </span>
+
+                                        {% elif inscription.statut == "ANNULE" %}
+
+                                            <span class="badge bg-danger">
+                                                Annulé
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-warning text-dark">
+                                                En attente
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center text-muted py-4">
+
+                    <i class="bi bi-journal-x fs-1 opacity-50"></i>
+
+                    <p class="mt-2 mb-0">
+                        Aucune inscription pour le moment.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

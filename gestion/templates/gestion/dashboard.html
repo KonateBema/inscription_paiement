@@ -1,0 +1,1317 @@
+```html
+{% extends "gestion/base.html" %}
+
+{% block title %}
+    Tableau de bord | Gestion Scolarité
+{% endblock %}
+
+{% block page_title %}
+    Tableau de bord
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+/* ========================================================= */
+/* DASHBOARD */
+/* ========================================================= */
+
+.dashboard-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+
+/* ========================================================= */
+/* WELCOME */
+/* ========================================================= */
+
+.welcome-box {
+    background: linear-gradient(
+        135deg,
+        #243F73 0%,
+        #31558f 100%
+    );
+
+    border-radius: 18px;
+    padding: 28px 32px;
+    color: white;
+
+    position: relative;
+    overflow: hidden;
+
+    box-shadow: 0 8px 25px rgba(36, 63, 115, 0.18);
+}
+
+.welcome-box::after {
+    content: "";
+
+    position: absolute;
+
+    width: 220px;
+    height: 220px;
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,0.07);
+
+    right: -70px;
+    top: -90px;
+}
+
+.welcome-title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.welcome-text {
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 0;
+}
+
+
+/* ========================================================= */
+/* STAT CARDS */
+/* ========================================================= */
+
+.stat-card-modern {
+    border: 0;
+    border-radius: 16px;
+
+    background: #fff;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+
+    height: 100%;
+}
+
+.stat-card-modern:hover {
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 10px 28px rgba(0,0,0,0.10);
+}
+
+.stat-card-modern .card-body {
+    padding: 22px;
+}
+
+.stat-label-modern {
+    font-size: .78rem;
+
+    font-weight: 600;
+
+    color: #7a8494;
+
+    text-transform: uppercase;
+
+    letter-spacing: .4px;
+
+    margin-bottom: 7px;
+}
+
+.stat-number-modern {
+    font-size: 1.85rem;
+
+    font-weight: 800;
+
+    color: #1e293b;
+
+    line-height: 1;
+}
+
+.stat-icon-modern {
+    width: 52px;
+    height: 52px;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 1.35rem;
+}
+
+
+/* couleurs */
+
+.icon-blue-modern {
+    background: #eaf1ff;
+    color: #3568c8;
+}
+
+.icon-orange-modern {
+    background: #fff3df;
+    color: #e08a00;
+}
+
+.icon-green-modern {
+    background: #e5f8ed;
+    color: #159957;
+}
+
+.icon-purple-modern {
+    background: #f1eafe;
+    color: #7652c8;
+}
+
+
+/* ========================================================= */
+/* FINANCE */
+/* ========================================================= */
+
+.finance-card-modern {
+
+    border-radius: 16px;
+
+    padding: 23px;
+
+    min-height: 145px;
+
+    color: white;
+
+    position: relative;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 7px 20px rgba(0,0,0,.08);
+
+    transition:
+        transform .2s ease;
+}
+
+.finance-card-modern:hover {
+    transform: translateY(-3px);
+}
+
+.finance-card-modern::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 150px;
+    height: 150px;
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,.08);
+
+    right: -55px;
+    bottom: -80px;
+}
+
+.finance-icon {
+    font-size: 1.5rem;
+
+    margin-bottom: 8px;
+}
+
+.finance-label {
+    display: block;
+
+    font-size: .8rem;
+
+    opacity: .85;
+
+    margin-bottom: 5px;
+}
+
+.finance-value {
+
+    font-size: 1.45rem;
+
+    font-weight: 800;
+
+    margin: 0;
+}
+
+.finance-blue {
+    background: linear-gradient(
+        135deg,
+        #315fa8,
+        #243F73
+    );
+}
+
+.finance-green {
+    background: linear-gradient(
+        135deg,
+        #198754,
+        #0f6b40
+    );
+}
+
+.finance-red {
+    background: linear-gradient(
+        135deg,
+        #b83242,
+        #8e1e2c
+    );
+}
+
+
+/* ========================================================= */
+/* SECTION CARDS */
+/* ========================================================= */
+
+.dashboard-card {
+
+    border: 0;
+
+    border-radius: 16px;
+
+    background: white;
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.06);
+
+    overflow: hidden;
+}
+
+.dashboard-card-header {
+
+    padding: 18px 22px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+}
+
+.dashboard-card-header h5 {
+
+    margin: 0;
+
+    font-weight: 700;
+
+    color: #263449;
+}
+
+.dashboard-card-header h5 i {
+    color: #243F73;
+}
+
+
+/* ========================================================= */
+/* TABLE */
+/* ========================================================= */
+
+.dashboard-table {
+
+    margin-bottom: 0;
+}
+
+.dashboard-table thead th {
+
+    background: #f8fafc;
+
+    color: #718096;
+
+    font-size: .72rem;
+
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: .35px;
+
+    padding: 13px 18px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    white-space: nowrap;
+}
+
+.dashboard-table tbody td {
+
+    padding: 15px 18px;
+
+    border-bottom: 1px solid #f0f2f5;
+
+    vertical-align: middle;
+
+    font-size: .87rem;
+}
+
+.dashboard-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.dashboard-table tbody tr {
+
+    transition: background .15s ease;
+}
+
+.dashboard-table tbody tr:hover {
+
+    background: #f8fafc;
+}
+
+
+/* ========================================================= */
+/* LINKS */
+/* ========================================================= */
+
+.dashboard-link {
+
+    color: #243F73;
+
+    font-weight: 700;
+
+    text-decoration: none;
+}
+
+.dashboard-link:hover {
+
+    color: #162c55;
+
+    text-decoration: underline;
+}
+
+
+/* ========================================================= */
+/* BADGES */
+/* ========================================================= */
+
+.status-badge {
+
+    border-radius: 30px;
+
+    padding: 6px 10px;
+
+    font-size: .72rem;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+
+/* ========================================================= */
+/* EMPTY STATE */
+/* ========================================================= */
+
+.empty-state {
+
+    padding: 42px 20px;
+
+    text-align: center;
+
+    color: #8a94a6;
+}
+
+.empty-state-icon {
+
+    width: 60px;
+    height: 60px;
+
+    margin: 0 auto 12px;
+
+    border-radius: 50%;
+
+    background: #f1f4f8;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 1.5rem;
+
+    color: #9aa5b5;
+}
+
+.empty-state-title {
+
+    font-weight: 600;
+
+    color: #667085;
+
+    margin-bottom: 3px;
+}
+
+
+/* ========================================================= */
+/* PAYMENT */
+/* ========================================================= */
+
+.payment-reference {
+
+    font-weight: 700;
+
+    color: #243F73;
+}
+
+.payment-date {
+
+    font-size: .72rem;
+
+    color: #8993a3;
+
+    margin-top: 2px;
+}
+
+.payment-amount {
+
+    font-weight: 800;
+
+    color: #198754;
+
+    white-space: nowrap;
+}
+
+
+/* ========================================================= */
+/* RESPONSIVE */
+/* ========================================================= */
+
+@media (max-width: 768px) {
+
+    .welcome-box {
+
+        padding: 22px;
+
+        border-radius: 14px;
+    }
+
+    .welcome-title {
+
+        font-size: 1.35rem;
+    }
+
+    .stat-number-modern {
+
+        font-size: 1.55rem;
+    }
+
+    .dashboard-card-header {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .dashboard-table {
+
+        min-width: 720px;
+    }
+
+}
+
+</style>
+
+
+<div class="dashboard-wrapper">
+
+
+<!-- ========================================================= -->
+<!-- BIENVENUE -->
+<!-- ========================================================= -->
+
+<div class="welcome-box mb-4">
+
+    <div class="position-relative" style="z-index:2;">
+
+        <h2 class="welcome-title">
+
+            Bonjour {{ request.user.username }} 👋
+
+        </h2>
+
+        <p class="welcome-text">
+
+            Voici un aperçu de l'activité de votre établissement.
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- STATISTIQUES -->
+<!-- ========================================================= -->
+
+<div class="row g-4 mb-4">
+
+
+    <!-- CANDIDATS -->
+
+    <div class="col-12 col-sm-6 col-xl-3">
+
+        <div class="card stat-card-modern">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <div class="stat-label-modern">
+
+                            Candidats
+
+                        </div>
+
+                        <div class="stat-number-modern">
+
+                            {{ total_candidats }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon-modern icon-blue-modern">
+
+                        <i class="bi bi-people-fill"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRÉINSCRIPTIONS -->
+
+    <div class="col-12 col-sm-6 col-xl-3">
+
+        <div class="card stat-card-modern">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <div class="stat-label-modern">
+
+                            Préinscriptions en attente
+
+                        </div>
+
+                        <div class="stat-number-modern">
+
+                            {{ preinscriptions_attente }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon-modern icon-orange-modern">
+
+                        <i class="bi bi-hourglass-split"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ÉTUDIANTS -->
+
+    <div class="col-12 col-sm-6 col-xl-3">
+
+        <div class="card stat-card-modern">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <div class="stat-label-modern">
+
+                            Étudiants
+
+                        </div>
+
+                        <div class="stat-number-modern">
+
+                            {{ total_etudiants }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon-modern icon-green-modern">
+
+                        <i class="bi bi-mortarboard-fill"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- INSCRIPTIONS -->
+
+    <div class="col-12 col-sm-6 col-xl-3">
+
+        <div class="card stat-card-modern">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <div class="stat-label-modern">
+
+                            Inscriptions
+
+                        </div>
+
+                        <div class="stat-number-modern">
+
+                            {{ total_inscriptions }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon-modern icon-purple-modern">
+
+                        <i class="bi bi-journal-check"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- FINANCES -->
+<!-- ========================================================= -->
+
+<div class="row g-4 mb-4">
+
+
+    <!-- TOTAL SCOLARITÉS -->
+
+    <div class="col-md-4">
+
+        <div class="finance-card-modern finance-blue">
+
+            <div class="finance-icon">
+
+                <i class="bi bi-wallet2"></i>
+
+            </div>
+
+            <span class="finance-label">
+
+                Total des scolarités
+
+            </span>
+
+            <h4 class="finance-value">
+
+                {{ total_scolarites|floatformat:0 }}
+
+                FCFA
+
+            </h4>
+
+        </div>
+
+    </div>
+
+
+    <!-- TOTAL ENCAISSÉ -->
+
+    <div class="col-md-4">
+
+        <div class="finance-card-modern finance-green">
+
+            <div class="finance-icon">
+
+                <i class="bi bi-cash-stack"></i>
+
+            </div>
+
+            <span class="finance-label">
+
+                Total encaissé
+
+            </span>
+
+            <h4 class="finance-value">
+
+                {{ total_encaisse|floatformat:0 }}
+
+                FCFA
+
+            </h4>
+
+        </div>
+
+    </div>
+
+
+    <!-- RESTE À PAYER -->
+
+    <div class="col-md-4">
+
+        <div class="finance-card-modern finance-red">
+
+            <div class="finance-icon">
+
+                <i class="bi bi-exclamation-circle"></i>
+
+            </div>
+
+            <span class="finance-label">
+
+                Reste à payer
+
+            </span>
+
+            <h4 class="finance-value">
+
+                {{ reste_a_payer|floatformat:0 }}
+
+                FCFA
+
+            </h4>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- ACTIVITÉS RÉCENTES -->
+<!-- ========================================================= -->
+
+<div class="row g-4">
+
+
+    <!-- ===================================================== -->
+    <!-- PRÉINSCRIPTIONS -->
+    <!-- ===================================================== -->
+
+    <div class="col-xl-7">
+
+        <div class="dashboard-card">
+
+
+            <!-- HEADER -->
+
+            <div class="dashboard-card-header">
+
+                <h5>
+
+                    <i class="bi bi-file-earmark-text me-2"></i>
+
+                    Dernières préinscriptions
+
+                </h5>
+
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <span class="badge bg-primary status-badge">
+
+                        {{ preinscriptions_validees }}
+
+                        validées
+
+                    </span>
+
+
+                    <a
+                        href="{% url 'gestion:preinscription_liste' %}"
+                        class="btn btn-sm btn-outline-primary"
+                    >
+
+                        <i class="bi bi-list-ul me-1"></i>
+
+                        Voir tout
+
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="table-responsive">
+
+                <table class="table dashboard-table align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                N°
+                            </th>
+
+                            <th>
+                                Candidat
+                            </th>
+
+                            <th>
+                                Filière
+                            </th>
+
+                            <th>
+                                Niveau
+                            </th>
+
+                            <th>
+                                Statut
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for preinscription in dernieres_preinscriptions %}
+
+                        <tr>
+
+
+                            <!-- NUMÉRO -->
+
+                            <td>
+
+                                <a
+                                    href="{% url 'gestion:preinscription_detail' preinscription.pk %}"
+                                    class="dashboard-link"
+                                >
+
+                                    {{ preinscription.numero }}
+
+                                </a>
+
+                            </td>
+
+
+                            <!-- CANDIDAT -->
+
+                            <td>
+
+                                <div class="fw-semibold">
+
+                                    {{ preinscription.candidat.nom }}
+
+                                    {{ preinscription.candidat.prenoms }}
+
+                                </div>
+
+                            </td>
+
+
+                            <!-- FILIÈRE -->
+
+                            <td>
+
+                                <span class="text-muted">
+
+                                    {{ preinscription.filiere }}
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- NIVEAU -->
+
+                            <td>
+
+                                <span class="text-muted">
+
+                                    {{ preinscription.niveau }}
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- STATUT -->
+
+                            <td>
+
+
+                                {% if preinscription.statut == "VALIDEE" %}
+
+                                    <span class="badge bg-success status-badge">
+
+                                        <i class="bi bi-check-circle me-1"></i>
+
+                                        Validée
+
+                                    </span>
+
+
+                                {% elif preinscription.statut == "EN_ATTENTE" %}
+
+                                    <span class="badge bg-warning text-dark status-badge">
+
+                                        <i class="bi bi-clock me-1"></i>
+
+                                        En attente
+
+                                    </span>
+
+
+                                {% elif preinscription.statut == "DOSSIER_INCOMPLET" %}
+
+                                    <span class="badge bg-danger status-badge">
+
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+
+                                        Dossier incomplet
+
+                                    </span>
+
+
+                                {% elif preinscription.statut == "DOSSIER_COMPLET" %}
+
+                                    <span class="badge bg-info text-dark status-badge">
+
+                                        <i class="bi bi-check2-square me-1"></i>
+
+                                        Dossier complet
+
+                                    </span>
+
+
+                                {% elif preinscription.statut == "REJETEE" %}
+
+                                    <span class="badge bg-danger status-badge">
+
+                                        <i class="bi bi-x-circle me-1"></i>
+
+                                        Rejetée
+
+                                    </span>
+
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary status-badge">
+
+                                        {{ preinscription.get_statut_display }}
+
+                                    </span>
+
+                                {% endif %}
+
+
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+
+                        <tr>
+
+                            <td colspan="5">
+
+                                <div class="empty-state">
+
+                                    <div class="empty-state-icon">
+
+                                        <i class="bi bi-inbox"></i>
+
+                                    </div>
+
+                                    <div class="empty-state-title">
+
+                                        Aucune préinscription
+
+                                    </div>
+
+                                    <small>
+
+                                        Les dernières préinscriptions apparaîtront ici.
+
+                                    </small>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- PAIEMENTS -->
+    <!-- ===================================================== -->
+
+    <div class="col-xl-5">
+
+        <div class="dashboard-card">
+
+
+            <!-- HEADER -->
+
+            <div class="dashboard-card-header">
+
+                <h5>
+
+                    <i class="bi bi-cash-stack me-2"></i>
+
+                    Derniers paiements
+
+                </h5>
+
+
+                <a
+                    href="{% url 'gestion:paiements_liste' %}"
+                    class="btn btn-sm btn-outline-primary"
+                >
+
+                    <i class="bi bi-list-ul me-1"></i>
+
+                    Voir tout
+
+                </a>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="table-responsive">
+
+                <table class="table dashboard-table align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Paiement
+                            </th>
+
+                            <th class="text-end">
+                                Montant
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for paiement in derniers_paiements %}
+
+                        <tr>
+
+
+                            <!-- PAIEMENT -->
+
+                            <td>
+
+                                <a
+                                    href="{% url 'gestion:paiement_detail' paiement.pk %}"
+                                    class="dashboard-link"
+                                >
+
+                                    {{ paiement.reference }}
+
+                                </a>
+
+
+                                <div class="payment-date">
+
+                                    {{ paiement.date_paiement|date:"d/m/Y à H:i" }}
+
+                                </div>
+
+
+                                <div class="small text-muted mt-1">
+
+                                    {% if paiement.mode_paiement == "ESPECES" %}
+
+                                        <i class="bi bi-cash me-1"></i>
+                                        Espèces
+
+                                    {% elif paiement.mode_paiement == "CHEQUE" %}
+
+                                        <i class="bi bi-file-text me-1"></i>
+                                        Chèque
+
+                                    {% elif paiement.mode_paiement == "VIREMENT" %}
+
+                                        <i class="bi bi-bank me-1"></i>
+                                        Virement
+
+                                    {% elif paiement.mode_paiement == "MOBILE_MONEY" %}
+
+                                        <i class="bi bi-phone me-1"></i>
+                                        Mobile Money
+
+                                    {% elif paiement.mode_paiement == "CARTE" %}
+
+                                        <i class="bi bi-credit-card me-1"></i>
+                                        Carte bancaire
+
+                                    {% else %}
+
+                                        <i class="bi bi-wallet2 me-1"></i>
+                                        Autre
+
+                                    {% endif %}
+
+                                </div>
+
+                            </td>
+
+
+                            <!-- MONTANT -->
+
+                            <td class="text-end">
+
+                                <div class="payment-amount">
+
+                                    {{ paiement.montant|floatformat:0 }}
+
+                                    FCFA
+
+                                </div>
+
+
+                                {% if paiement.statut == "VALIDE" %}
+
+                                    <span class="badge bg-success status-badge mt-1">
+
+                                        Validé
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger status-badge mt-1">
+
+                                        Annulé
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+
+                        <tr>
+
+                            <td colspan="2">
+
+                                <div class="empty-state">
+
+                                    <div class="empty-state-icon">
+
+                                        <i class="bi bi-cash-stack"></i>
+
+                                    </div>
+
+                                    <div class="empty-state-title">
+
+                                        Aucun paiement
+
+                                    </div>
+
+                                    <small>
+
+                                        Les derniers paiements apparaîtront ici.
+
+                                    </small>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+</div>
+
+{% endblock %}
+

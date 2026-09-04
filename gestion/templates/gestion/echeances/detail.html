@@ -1,0 +1,522 @@
+
+{% extends "gestion/base.html" %}
+
+{% block title %}
+Détail de l'échéance
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+
+                <i class="bi bi-calendar-check me-2 text-primary"></i>
+
+                {{ echeance.libelle }}
+
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Échéance n°{{ echeance.numero }}
+
+            </p>
+
+        </div>
+
+
+        <div class="d-flex gap-2">
+
+            <a href="{% url 'gestion:echeances_liste' %}"
+               class="btn btn-light border">
+
+                <i class="bi bi-arrow-left me-2"></i>
+                Retour
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="row g-4">
+
+
+        <!-- INFORMATIONS ETUDIANT -->
+        <div class="col-xl-4 col-lg-5">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white py-3">
+
+                    <h5 class="fw-bold mb-0">
+
+                        <i class="bi bi-person-circle me-2 text-primary"></i>
+
+                        Étudiant
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="text-center mb-4">
+
+                        {% if echeance.scolarite.inscription.etudiant.candidat.photo %}
+
+                            <img
+                                src="{{ echeance.scolarite.inscription.etudiant.candidat.photo.url }}"
+                                alt="Photo étudiant"
+                                class="rounded-circle"
+                                style="width:90px;height:90px;object-fit:cover;"
+                            >
+
+                        {% else %}
+
+                            <div
+                                class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center"
+                                style="width:90px;height:90px;"
+                            >
+
+                                <i class="bi bi-person fs-1 text-primary"></i>
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <h5 class="text-center fw-bold">
+
+                        {{ echeance.scolarite.inscription.etudiant.candidat.nom }}
+                        {{ echeance.scolarite.inscription.etudiant.candidat.prenoms }}
+
+                    </h5>
+
+
+                    <p class="text-center text-muted mb-4">
+
+                        {{ echeance.scolarite.inscription.etudiant.matricule }}
+
+                    </p>
+
+
+                    <div class="border-top pt-3">
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span class="text-muted">
+                                Inscription
+                            </span>
+
+                            <span class="fw-semibold">
+                                {{ echeance.scolarite.inscription.numero }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span class="text-muted">
+                                Année académique
+                            </span>
+
+                            <span class="fw-semibold">
+                                {{ echeance.scolarite.inscription.annee_academique.libelle }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span class="text-muted">
+                                Filière
+                            </span>
+
+                            <span class="fw-semibold text-end">
+                                {{ echeance.scolarite.inscription.filiere.nom }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="d-flex justify-content-between">
+
+                            <span class="text-muted">
+                                Classe
+                            </span>
+
+                            <span class="fw-semibold">
+                                {{ echeance.scolarite.inscription.classe.nom }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DETAIL ECHEANCE -->
+        <div class="col-xl-8 col-lg-7">
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <h5 class="fw-bold mb-0">
+
+                            <i class="bi bi-receipt me-2 text-primary"></i>
+
+                            Détail de l'échéance
+
+                        </h5>
+
+
+                        {% if echeance.statut == "PAYEE" %}
+
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Payée
+                            </span>
+
+                        {% elif echeance.statut == "EN_COURS" %}
+
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                En cours
+                            </span>
+
+                        {% elif echeance.statut == "EN_RETARD" %}
+
+                            <span class="badge bg-danger">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                En retard
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+                                À venir
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <div class="row g-4">
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Libellé
+                            </div>
+
+                            <div class="fw-bold fs-5">
+                                {{ echeance.libelle }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small">
+                                Date d'échéance
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ echeance.date_echeance|date:"d/m/Y" }}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="text-muted small">
+                                Montant
+                            </div>
+
+                            <div class="fw-bold text-primary fs-5">
+
+                                {{ echeance.montant|floatformat:0 }}
+                                FCFA
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="text-muted small">
+                                Montant payé
+                            </div>
+
+                            <div class="fw-bold text-success fs-5">
+
+                                {{ echeance.montant_paye|floatformat:0 }}
+                                FCFA
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="text-muted small">
+                                Reste à payer
+                            </div>
+
+                            <div class="fw-bold text-danger fs-5">
+
+                                {{ echeance.reste_a_payer|floatformat:0 }}
+                                FCFA
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PROGRESSION -->
+                    <div class="mt-4">
+
+                        <div class="d-flex justify-content-between mb-2">
+
+                            <span class="text-muted">
+                                Progression du paiement
+                            </span>
+
+                            {% if echeance.montant > 0 %}
+
+                                {% widthratio echeance.montant_paye echeance.montant 100 %}%
+
+                            {% else %}
+
+                                0%
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="progress" style="height:10px;">
+
+                            {% if echeance.montant > 0 %}
+
+                                {% widthratio echeance.montant_paye echeance.montant 100 as progression %}
+
+                            {% else %}
+
+                                {% with progression=0 %}
+
+                                {% endwith %}
+
+                            {% endif %}
+
+                            <div class="progress-bar"
+                                 role="progressbar"
+                                 style="width: {% if echeance.montant > 0 %}{% widthratio echeance.montant_paye echeance.montant 100 %}{% else %}0{% endif %}%;">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAIEMENTS -->
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <h5 class="fw-bold mb-0">
+
+                            <i class="bi bi-cash-stack me-2 text-success"></i>
+
+                            Paiements
+
+                        </h5>
+
+                        <span class="badge bg-success-subtle text-success">
+                            {{ paiements|length }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body p-0">
+
+                    {% if paiements %}
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover align-middle mb-0">
+
+                                <thead class="table-light">
+
+                                    <tr>
+
+                                        <th class="ps-4">
+                                            Référence
+                                        </th>
+
+                                        <th>
+                                            Date
+                                        </th>
+
+                                        <th>
+                                            Montant
+                                        </th>
+
+                                        <th>
+                                            Mode
+                                        </th>
+
+                                        <th>
+                                            Statut
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                    {% for paiement in paiements %}
+
+                                        <tr>
+
+                                            <td class="ps-4">
+
+                                                <span class="fw-semibold">
+                                                    {{ paiement.reference }}
+                                                </span>
+
+                                            </td>
+
+
+                                            <td>
+
+                                                {{ paiement.date_paiement|date:"d/m/Y H:i" }}
+
+                                            </td>
+
+
+                                            <td>
+
+                                                <span class="fw-bold text-success">
+
+                                                    {{ paiement.montant|floatformat:0 }}
+                                                    FCFA
+
+                                                </span>
+
+                                            </td>
+
+
+                                            <td>
+
+                                                {{ paiement.get_mode_paiement_display }}
+
+                                            </td>
+
+
+                                            <td>
+
+                                                {% if paiement.statut == "VALIDE" %}
+
+                                                    <span class="badge bg-success">
+                                                        Validé
+                                                    </span>
+
+                                                {% else %}
+
+                                                    <span class="badge bg-danger">
+                                                        Annulé
+                                                    </span>
+
+                                                {% endif %}
+
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="text-center py-5">
+
+                            <i class="bi bi-cash-stack fs-1 text-muted"></i>
+
+                            <h6 class="fw-bold mt-3">
+                                Aucun paiement
+                            </h6>
+
+                            <p class="text-muted mb-0">
+                                Aucun paiement n'a encore été enregistré
+                                pour cette échéance.
+                            </p>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

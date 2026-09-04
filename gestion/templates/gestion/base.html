@@ -1,0 +1,1623 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+            Gestion Scolaire
+        {% endblock %}
+    </title>
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP -->
+    <!-- ===================================================== -->
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP ICONS -->
+    <!-- ===================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+
+    <!-- ===================================================== -->
+    <!-- GOOGLE FONT -->
+    <!-- ===================================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- ===================================================== -->
+    <!-- STYLE GLOBAL -->
+    <!-- ===================================================== -->
+
+    <style>
+
+        :root {
+
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+
+            --sidebar-width: 260px;
+
+            --bg-main: #f5f7fb;
+
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+
+            --border-color: #e2e8f0;
+
+            --sidebar-bg: #0f172a;
+
+            --white: #ffffff;
+
+        }
+
+
+        /* ===================================================== */
+        /* GLOBAL */
+        /* ===================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family: "Inter", sans-serif;
+
+            background: var(--bg-main);
+
+            color: var(--text-dark);
+
+        }
+
+
+        a {
+            text-decoration: none;
+        }
+
+
+        /* ===================================================== */
+        /* SIDEBAR */
+        /* ===================================================== */
+
+        .sidebar {
+
+            position: fixed;
+
+            top: 0;
+            left: 0;
+
+            width: var(--sidebar-width);
+
+            height: 100vh;
+
+            background: var(--sidebar-bg);
+
+            color: white;
+
+            z-index: 1050;
+
+            overflow-y: auto;
+
+            transition: transform .3s ease;
+
+        }
+
+
+        /* Scrollbar sidebar */
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+
+        .sidebar::-webkit-scrollbar-thumb {
+
+            background: rgba(255,255,255,.15);
+
+            border-radius: 10px;
+
+        }
+
+
+        /* ===================================================== */
+        /* BRAND */
+        /* ===================================================== */
+
+        .sidebar-brand {
+
+            height: 75px;
+
+            display: flex;
+
+            align-items: center;
+
+            padding: 0 22px;
+
+            border-bottom: 1px solid rgba(255,255,255,.08);
+
+        }
+
+
+        .brand-icon {
+
+            width: 42px;
+            height: 42px;
+
+            min-width: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background: var(--primary);
+
+            margin-right: 12px;
+
+            font-size: 20px;
+
+            box-shadow:
+                0 5px 15px rgba(37,99,235,.25);
+
+        }
+
+
+        .brand-title {
+
+            font-size: 17px;
+
+            font-weight: 800;
+
+            line-height: 1.1;
+
+            color: white;
+
+        }
+
+
+        .brand-subtitle {
+
+            font-size: 11px;
+
+            color: #94a3b8;
+
+            margin-top: 3px;
+
+        }
+
+
+        /* ===================================================== */
+        /* MENU */
+        /* ===================================================== */
+
+        .sidebar-menu {
+
+            padding: 20px 12px 30px;
+
+        }
+
+
+        .menu-title {
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+
+            color: #64748b;
+
+            font-weight: 700;
+
+            padding: 0 12px;
+
+            margin-top: 18px;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .menu-title:first-child {
+            margin-top: 0;
+        }
+
+
+        .menu-link {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 11px 13px;
+
+            margin-bottom: 4px;
+
+            color: #cbd5e1;
+
+            text-decoration: none;
+
+            border-radius: 9px;
+
+            font-size: 14px;
+
+            font-weight: 500;
+
+            transition:
+                background .2s ease,
+                color .2s ease,
+                transform .2s ease;
+
+        }
+
+
+        .menu-link i {
+
+            width: 20px;
+
+            min-width: 20px;
+
+            text-align: center;
+
+            font-size: 17px;
+
+        }
+
+
+        .menu-link:hover {
+
+            background: rgba(255,255,255,.07);
+
+            color: white;
+
+            transform: translateX(2px);
+
+        }
+
+
+        .menu-link.active {
+
+            background: var(--primary);
+
+            color: white;
+
+            box-shadow:
+                0 4px 12px rgba(37,99,235,.25);
+
+        }
+
+
+        .menu-link.disabled {
+
+            opacity: .55;
+
+            cursor: not-allowed;
+
+        }
+
+
+        /* ===================================================== */
+        /* MAIN */
+        /* ===================================================== */
+
+        .main-wrapper {
+
+            margin-left: var(--sidebar-width);
+
+            min-height: 100vh;
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+
+        /* ===================================================== */
+        /* TOPBAR */
+        /* ===================================================== */
+
+        .topbar {
+
+            height: 75px;
+
+            background: white;
+
+            border-bottom: 1px solid var(--border-color);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 28px;
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 1000;
+
+        }
+
+
+        .topbar-left {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 15px;
+
+        }
+
+
+        .page-title {
+
+            font-size: 18px;
+
+            font-weight: 700;
+
+            margin: 0;
+
+            color: var(--text-dark);
+
+        }
+
+
+        .menu-toggle {
+
+            border: 0;
+
+            background: transparent;
+
+            font-size: 24px;
+
+            display: none;
+
+            color: var(--text-dark);
+
+            padding: 4px 8px;
+
+        }
+
+
+        .menu-toggle:hover {
+
+            color: var(--primary);
+
+        }
+
+
+        /* ===================================================== */
+        /* USER */
+        /* ===================================================== */
+
+        .user-area {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+        }
+
+
+        .user-avatar {
+
+            width: 40px;
+
+            height: 40px;
+
+            min-width: 40px;
+
+            border-radius: 50%;
+
+            background: #dbeafe;
+
+            color: var(--primary);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+        }
+
+
+        .user-info {
+
+            line-height: 1.2;
+
+        }
+
+
+        .user-name {
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            color: var(--text-dark);
+
+        }
+
+
+        .user-role {
+
+            font-size: 11px;
+
+            color: var(--text-muted);
+
+            margin-top: 3px;
+
+        }
+
+
+        /* ===================================================== */
+        /* CONTENT */
+        /* ===================================================== */
+
+        .content-wrapper {
+
+            padding: 28px;
+
+            min-height: calc(100vh - 75px);
+
+            flex: 1;
+
+        }
+
+
+        /* ===================================================== */
+        /* CARDS */
+        /* ===================================================== */
+
+        .card {
+
+            border: 1px solid var(--border-color);
+
+            border-radius: 14px;
+
+            background: white;
+
+        }
+
+
+        .shadow-sm {
+
+            box-shadow:
+                0 4px 15px rgba(15,23,42,.04) !important;
+
+        }
+
+
+        /* ===================================================== */
+        /* TABLE */
+        /* ===================================================== */
+
+        .table {
+
+            font-size: 13px;
+
+            margin-bottom: 0;
+
+        }
+
+
+        .table thead th {
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing: .4px;
+
+            color: var(--text-muted);
+
+            font-weight: 700;
+
+            border-bottom: 1px solid var(--border-color);
+
+            white-space: nowrap;
+
+        }
+
+
+        .table td {
+
+            border-color: var(--border-color);
+
+            vertical-align: middle;
+
+        }
+
+
+        .table tbody tr:hover {
+
+            background: #f8fafc;
+
+        }
+
+
+        /* ===================================================== */
+        /* BUTTONS */
+        /* ===================================================== */
+
+        .btn {
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            font-size: 13px;
+
+        }
+
+
+        .btn-primary {
+
+            background: var(--primary);
+
+            border-color: var(--primary);
+
+        }
+
+
+        .btn-primary:hover {
+
+            background: var(--primary-dark);
+
+            border-color: var(--primary-dark);
+
+        }
+
+
+        /* ===================================================== */
+        /* FORMULAIRES */
+        /* ===================================================== */
+
+        .form-label {
+
+            font-size: 13px;
+
+            color: var(--text-dark);
+
+            font-weight: 600;
+
+        }
+
+
+        .form-control,
+        .form-select {
+
+            border-radius: 8px;
+
+            border-color: #cbd5e1;
+
+            min-height: 42px;
+
+            font-size: 13px;
+
+        }
+
+
+        .form-control:focus,
+        .form-select:focus {
+
+            border-color: var(--primary);
+
+            box-shadow:
+                0 0 0 .2rem rgba(37,99,235,.12);
+
+        }
+
+
+        textarea.form-control {
+
+            min-height: auto;
+
+        }
+
+
+        .form-text {
+
+            font-size: 11px;
+
+            color: var(--text-muted);
+
+        }
+
+
+        /* ===================================================== */
+        /* BADGES */
+        /* ===================================================== */
+
+        .badge {
+
+            border-radius: 6px;
+
+            font-size: 10px;
+
+            padding: 6px 9px;
+
+            font-weight: 700;
+
+        }
+
+
+        /* ===================================================== */
+        /* ALERTS */
+        /* ===================================================== */
+
+        .alert {
+
+            border-radius: 10px;
+
+            font-size: 13px;
+
+        }
+
+
+        /* ===================================================== */
+        /* FOOTER */
+        /* ===================================================== */
+
+        .footer {
+
+            padding: 20px 28px;
+
+            color: var(--text-muted);
+
+            font-size: 12px;
+
+            text-align: center;
+
+            background: transparent;
+
+        }
+
+
+        /* ===================================================== */
+        /* OVERLAY MOBILE */
+        /* ===================================================== */
+
+        .sidebar-overlay {
+
+            display: none;
+
+            position: fixed;
+
+            inset: 0;
+
+            background: rgba(15,23,42,.5);
+
+            z-index: 1040;
+
+        }
+
+
+        .sidebar-overlay.show {
+
+            display: block;
+
+        }
+
+
+        /* ===================================================== */
+        /* RESPONSIVE TABLE */
+        /* ===================================================== */
+
+        .table-responsive {
+
+            border-radius: 10px;
+
+        }
+
+
+        /* ===================================================== */
+        /* RESPONSIVE - TABLETTE */
+        /* ===================================================== */
+
+        @media (max-width: 991px) {
+
+            .sidebar {
+
+                transform: translateX(-100%);
+
+            }
+
+
+            .sidebar.show {
+
+                transform: translateX(0);
+
+            }
+
+
+            .main-wrapper {
+
+                margin-left: 0;
+
+            }
+
+
+            .menu-toggle {
+
+                display: block;
+
+            }
+
+
+            .content-wrapper {
+
+                padding: 20px;
+
+            }
+
+
+            .topbar {
+
+                padding: 0 20px;
+
+            }
+
+        }
+
+
+        /* ===================================================== */
+        /* RESPONSIVE - MOBILE */
+        /* ===================================================== */
+
+        @media (max-width: 576px) {
+
+            .topbar {
+
+                padding: 0 15px;
+
+            }
+
+
+            .content-wrapper {
+
+                padding: 15px;
+
+            }
+
+
+            .user-info {
+
+                display: none;
+
+            }
+
+
+            .page-title {
+
+                font-size: 16px;
+
+            }
+
+
+            .footer {
+
+                padding: 15px;
+
+            }
+
+        }
+
+    </style>
+
+
+    <!-- ===================================================== -->
+    <!-- CSS DES PAGES -->
+    <!-- ===================================================== -->
+
+    {% block extra_css %}
+    {% endblock %}
+
+</head>
+
+
+<body>
+
+
+<!-- ========================================================= -->
+<!-- SIDEBAR -->
+<!-- ========================================================= -->
+
+<aside
+    class="sidebar"
+    id="sidebar"
+>
+
+
+    <!-- ===================================================== -->
+    <!-- BRAND -->
+    <!-- ===================================================== -->
+
+    <div class="sidebar-brand">
+
+        <div class="brand-icon">
+
+            <i class="bi bi-mortarboard-fill"></i>
+
+        </div>
+
+
+        <div>
+
+            <div class="brand-title">
+                Gestion Scolaire
+            </div>
+
+            <div class="brand-subtitle">
+                Administration
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MENU -->
+    <!-- ===================================================== -->
+
+    <div class="sidebar-menu">
+
+
+        <!-- ================================================= -->
+        <!-- PRINCIPAL -->
+        <!-- ================================================= -->
+
+        <div class="menu-title">
+            Principal
+        </div>
+
+
+        <a
+            href="{% url 'gestion:dashboard' %}"
+            class="menu-link
+            {% if request.resolver_match.url_name == 'dashboard' %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-speedometer2"></i>
+
+            <span>
+                Tableau de bord
+            </span>
+
+        </a>
+
+
+        <!-- ================================================= -->
+        <!-- ADMISSIONS -->
+        <!-- ================================================= -->
+
+        <div class="menu-title">
+            Admissions
+        </div>
+
+
+        <!-- CANDIDATS -->
+
+        <a
+            href="{% url 'gestion:candidats_liste' %}"
+            class="menu-link
+            {% if 'candidat' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-people"></i>
+
+            <span>
+                Candidats
+            </span>
+
+        </a>
+
+
+        <!-- PRÉINSCRIPTIONS -->
+
+        <a
+            href="{% url 'gestion:preinscription_liste' %}"
+            class="menu-link
+            {% if 'preinscription' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-file-earmark-person"></i>
+
+            <span>
+                Préinscriptions
+            </span>
+
+        </a>
+
+
+        <!-- ================================================= -->
+        <!-- SCOLARITÉ -->
+        <!-- ================================================= -->
+
+        <div class="menu-title">
+            Scolarité
+        </div>
+
+
+        <!-- ÉTUDIANTS -->
+
+        <a
+            href="{% url 'gestion:etudiants_liste' %}"
+            class="menu-link
+            {% if 'etudiant' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-people-fill"></i>
+
+            <span>
+                Étudiants
+            </span>
+
+        </a>
+
+
+        <!-- INSCRIPTIONS -->
+
+        <a
+            href="{% url 'gestion:inscriptions_liste' %}"
+            class="menu-link
+            {% if 'inscription' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-journal-check"></i>
+
+            <span>
+                Inscriptions
+            </span>
+
+        </a>
+
+
+        <!-- SCOLARITÉS -->
+
+        <a
+            href="{% url 'gestion:scolarites_liste' %}"
+            class="menu-link
+            {% if 'scolarite' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-cash-stack"></i>
+
+            <span>
+                Scolarités
+            </span>
+
+        </a>
+
+
+        <!-- ÉCHÉANCES -->
+
+        <a
+            href="{% url 'gestion:echeances_liste' %}"
+            class="menu-link
+            {% if 'echeance' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-calendar-event"></i>
+
+            <span>
+                Échéances
+            </span>
+
+        </a>
+
+
+        <!-- ================================================= -->
+        <!-- FINANCES -->
+        <!-- ================================================= -->
+
+        <div class="menu-title">
+            Finances
+        </div>
+
+
+        <!-- PAIEMENTS -->
+
+        <a
+            href="{% url 'gestion:paiements_liste' %}"
+            class="menu-link
+            {% if 'paiement' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+
+            <i class="bi bi-credit-card"></i>
+
+            <span>
+                Paiements
+            </span>
+
+        </a>
+
+        <!-- REÇUS -->
+        
+        <a
+            href="{% url 'gestion:recus_liste' %}"
+            class="menu-link
+            {% if 'recu' in request.resolver_match.url_name %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-receipt"></i>
+        
+            <span>
+                Reçus
+            </span>
+        
+        </a>
+      
+        
+
+
+        <!-- ================================================= -->
+        <!-- ADMINISTRATION -->
+        <!-- ================================================= -->
+
+        <div class="menu-title">
+            Administration
+        </div>
+
+
+        <a
+            href="/admin/"
+            class="menu-link"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+
+            <i class="bi bi-gear"></i>
+
+            <span>
+                Administration Django
+            </span>
+
+        </a>
+
+
+    </div>
+
+</aside>
+
+
+<!-- ========================================================= -->
+<!-- OVERLAY MOBILE -->
+<!-- ========================================================= -->
+
+<div
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+></div>
+
+
+<!-- ========================================================= -->
+<!-- MAIN -->
+<!-- ========================================================= -->
+
+<div class="main-wrapper">
+
+
+    <!-- ===================================================== -->
+    <!-- TOPBAR -->
+    <!-- ===================================================== -->
+
+    <header class="topbar">
+
+
+        <div class="topbar-left">
+
+
+            <!-- MENU MOBILE -->
+
+            <button
+                class="menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-label="Ouvrir le menu"
+                aria-controls="sidebar"
+                aria-expanded="false"
+            >
+
+                <i class="bi bi-list"></i>
+
+            </button>
+
+
+            <!-- TITRE -->
+
+            <div>
+
+                <h1 class="page-title">
+
+                    {% block page_title %}
+                        Gestion scolaire
+                    {% endblock %}
+
+                </h1>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- UTILISATEUR -->
+        <!-- ================================================= -->
+
+        <div class="user-area">
+
+
+            <!-- AVATAR -->
+
+            <div class="user-avatar">
+
+                {% if request.user.is_authenticated %}
+
+                    {{ request.user.username|first|upper }}
+
+                {% else %}
+
+                    <i class="bi bi-person"></i>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- INFORMATIONS -->
+
+            <div class="user-info">
+
+                {% if request.user.is_authenticated %}
+
+                    <div class="user-name">
+
+                        {% if request.user.get_full_name %}
+
+                            {{ request.user.get_full_name }}
+
+                        {% else %}
+
+                            {{ request.user.username }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="user-role">
+
+                        {% if request.user.is_superuser %}
+
+                            Administrateur
+
+                        {% else %}
+
+                            Gestionnaire
+
+                        {% endif %}
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- DÉCONNEXION -->
+
+     {% if request.user.is_authenticated %}
+
+    <form
+        method="post"
+        action="{% url 'logout' %}"
+        class="d-inline"
+    >
+
+        {% csrf_token %}
+
+        <button
+            type="submit"
+            class="btn btn-sm btn-outline-danger"
+            title="Déconnexion"
+        >
+
+            <i class="bi bi-box-arrow-right"></i>
+
+        </button>
+
+    </form>
+
+{% endif %}
+
+        </div>
+
+    </header>
+
+
+    <!-- ===================================================== -->
+    <!-- MESSAGES DJANGO -->
+    <!-- ===================================================== -->
+
+    {% if messages %}
+
+        <div class="container-fluid px-4 pt-3">
+
+            {% for message in messages %}
+
+                <div
+                    class="
+                        alert
+                        {% if message.tags == 'error' %}
+                            alert-danger
+                        {% elif message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% else %}
+                            alert-info
+                        {% endif %}
+                        alert-dismissible
+                        fade
+                        show
+                        shadow-sm
+                    "
+                    role="alert"
+                >
+
+
+                    <!-- ICÔNE -->
+
+                    {% if message.tags == "success" %}
+
+                        <i class="bi bi-check-circle me-2"></i>
+
+                    {% elif message.tags == "error" %}
+
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+
+                    {% elif message.tags == "warning" %}
+
+                        <i class="bi bi-exclamation-circle me-2"></i>
+
+                    {% else %}
+
+                        <i class="bi bi-info-circle me-2"></i>
+
+                    {% endif %}
+
+
+                    {{ message }}
+
+
+                    <!-- FERMER -->
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Fermer"
+                    ></button>
+
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ===================================================== -->
+    <!-- CONTENT -->
+    <!-- ===================================================== -->
+
+    <main class="content-wrapper">
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+
+    <!-- ===================================================== -->
+    <!-- FOOTER -->
+    <!-- ===================================================== -->
+
+    <footer class="footer">
+
+        © {% now "Y" %} — Gestion Scolaire
+
+    </footer>
+
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- BOOTSTRAP JS -->
+<!-- ========================================================= -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+
+<!-- ========================================================= -->
+<!-- SIDEBAR MOBILE -->
+<!-- ========================================================= -->
+
+<script>
+
+    const sidebar =
+        document.getElementById("sidebar");
+
+    const menuToggle =
+        document.getElementById("menuToggle");
+
+    const sidebarOverlay =
+        document.getElementById("sidebarOverlay");
+
+
+    /* ===================================================== */
+    /* OUVRIR LE MENU */
+    /* ===================================================== */
+
+    function openSidebar() {
+
+        if (!sidebar || !sidebarOverlay) {
+            return;
+        }
+
+        sidebar.classList.add("show");
+
+        sidebarOverlay.classList.add("show");
+
+        if (menuToggle) {
+
+            menuToggle.setAttribute(
+                "aria-expanded",
+                "true"
+            );
+
+        }
+
+        document.body.style.overflow = "hidden";
+
+    }
+
+
+    /* ===================================================== */
+    /* FERMER LE MENU */
+    /* ===================================================== */
+
+    function closeSidebar() {
+
+        if (!sidebar || !sidebarOverlay) {
+            return;
+        }
+
+        sidebar.classList.remove("show");
+
+        sidebarOverlay.classList.remove("show");
+
+        if (menuToggle) {
+
+            menuToggle.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+        }
+
+        document.body.style.overflow = "";
+
+    }
+
+
+    /* ===================================================== */
+    /* BOUTON MENU */
+    /* ===================================================== */
+
+    if (menuToggle) {
+
+        menuToggle.addEventListener(
+            "click",
+            function () {
+
+                if (
+                    sidebar &&
+                    sidebar.classList.contains("show")
+                ) {
+
+                    closeSidebar();
+
+                } else {
+
+                    openSidebar();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ===================================================== */
+    /* OVERLAY */
+    /* ===================================================== */
+
+    if (sidebarOverlay) {
+
+        sidebarOverlay.addEventListener(
+            "click",
+            closeSidebar
+        );
+
+    }
+
+
+    /* ===================================================== */
+    /* LIENS DU MENU */
+    /* ===================================================== */
+
+    document
+        .querySelectorAll(".menu-link")
+        .forEach(function(link) {
+
+            link.addEventListener(
+                "click",
+                function() {
+
+                    if (
+                        window.innerWidth <= 991 &&
+                        link.getAttribute("href") !== "#"
+                    ) {
+
+                        closeSidebar();
+
+                    }
+
+                }
+            );
+
+        });
+
+
+    /* ===================================================== */
+    /* TOUCHE ESCAPE */
+    /* ===================================================== */
+
+    document.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Escape") {
+
+                closeSidebar();
+
+            }
+
+        }
+    );
+
+
+    /* ===================================================== */
+    /* REDIMENSIONNEMENT */
+    /* ===================================================== */
+
+    window.addEventListener(
+        "resize",
+        function() {
+
+            if (window.innerWidth > 991) {
+
+                closeSidebar();
+
+            }
+
+        }
+    );
+
+</script>
+
+
+<!-- ========================================================= -->
+<!-- JAVASCRIPT DES PAGES -->
+<!-- ========================================================= -->
+
+{% block extra_js %}
+{% endblock %}
+
+
+</body>
+
+</html>
+

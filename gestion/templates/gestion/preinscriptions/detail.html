@@ -1,0 +1,838 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}
+    {{ preinscription.numero }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- =========================================================
+         EN-TÊTE
+    ========================================================== -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+
+                <i class="bi bi-file-earmark-person-fill me-2 text-primary"></i>
+
+                {{ preinscription.numero }}
+
+            </h2>
+
+            <p class="text-muted mb-0">
+                Détail de la préinscription
+            </p>
+
+        </div>
+
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <!-- =================================================
+                 MODIFIER
+            ================================================== -->
+
+            <a
+                href="{% url 'gestion:preinscription_update' preinscription.pk %}"
+                class="btn btn-primary"
+            >
+
+                <i class="bi bi-pencil-square me-1"></i>
+
+                Modifier
+
+            </a>
+
+
+            <!-- =================================================
+                 ACTIVATION / RÉACTIVATION ÉTUDIANT
+            ================================================== -->
+
+            {% if preinscription.statut == "VALIDEE" %}
+
+                {% if not preinscription.candidat.etudiant %}
+
+                    <!-- ==============================
+                         CRÉER ET ACTIVER
+                    =============================== -->
+
+                    <form
+                        method="post"
+                        action="{% url 'gestion:preinscription_activer_etudiant' preinscription.pk %}"
+                        class="d-inline"
+                    >
+
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="btn btn-success"
+                            onclick="return confirm('Voulez-vous activer cet étudiant ?');"
+                        >
+
+                            <i class="bi bi-person-check-fill me-1"></i>
+
+                            Activer l'étudiant
+
+                        </button>
+
+                    </form>
+
+
+                {% elif not preinscription.candidat.etudiant.actif %}
+
+                    <!-- ==============================
+                         RÉACTIVER
+                    =============================== -->
+
+                    <form
+                        method="post"
+                        action="{% url 'gestion:preinscription_activer_etudiant' preinscription.pk %}"
+                        class="d-inline"
+                    >
+
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="btn btn-success"
+                            onclick="return confirm('Voulez-vous réactiver cet étudiant ?');"
+                        >
+
+                            <i class="bi bi-person-check-fill me-1"></i>
+
+                            Réactiver l'étudiant
+
+                        </button>
+
+                    </form>
+
+
+                {% else %}
+
+                    <!-- ==============================
+                         DÉJÀ ACTIF
+                    =============================== -->
+
+                    <span class="btn btn-outline-success disabled">
+
+                        <i class="bi bi-check-circle-fill me-1"></i>
+
+                        Étudiant actif
+
+                    </span>
+
+                {% endif %}
+
+            {% endif %}
+
+
+            <!-- =================================================
+                 RETOUR
+            ================================================== -->
+
+            <a
+                href="{% url 'gestion:preinscription_liste' %}"
+                class="btn btn-outline-secondary"
+            >
+
+                <i class="bi bi-arrow-left me-1"></i>
+
+                Retour
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         INFORMATIONS PRINCIPALES
+    ========================================================== -->
+
+    <div class="row g-4">
+
+
+        <!-- =====================================================
+             CARD CANDIDAT
+        ====================================================== -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-header bg-light py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-person-fill me-2 text-primary"></i>
+
+                        Informations du candidat
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <dl class="row mb-0">
+
+
+                        <!-- NOM -->
+
+                        <dt class="col-sm-4 text-muted">
+                            Nom
+                        </dt>
+
+                        <dd class="col-sm-8 fw-semibold">
+                            {{ preinscription.candidat.nom }}
+                        </dd>
+
+
+                        <!-- PRÉNOMS -->
+
+                        <dt class="col-sm-4 text-muted">
+                            Prénoms
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            {{ preinscription.candidat.prenoms }}
+                        </dd>
+
+
+                        <!-- SEXE -->
+
+                        {% if preinscription.candidat.sexe %}
+
+                            <dt class="col-sm-4 text-muted">
+                                Sexe
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                {{ preinscription.candidat.sexe }}
+                            </dd>
+
+                        {% endif %}
+
+
+                        <!-- DATE DE NAISSANCE -->
+
+                        {% if preinscription.candidat.date_naissance %}
+
+                            <dt class="col-sm-4 text-muted">
+                                Date de naissance
+                            </dt>
+
+                            <dd class="col-sm-8">
+
+                                {{ preinscription.candidat.date_naissance|date:"d/m/Y" }}
+
+                            </dd>
+
+                        {% endif %}
+
+
+                        <!-- LIEU DE NAISSANCE -->
+
+                        {% if preinscription.candidat.lieu_naissance %}
+
+                            <dt class="col-sm-4 text-muted">
+                                Lieu de naissance
+                            </dt>
+
+                            <dd class="col-sm-8">
+                                {{ preinscription.candidat.lieu_naissance }}
+                            </dd>
+
+                        {% endif %}
+
+
+                        <!-- TÉLÉPHONE -->
+
+                        <dt class="col-sm-4 text-muted">
+                            Téléphone
+                        </dt>
+
+                        <dd class="col-sm-8">
+
+                            {% if preinscription.candidat.telephone %}
+
+                                <i class="bi bi-telephone me-1"></i>
+
+                                {{ preinscription.candidat.telephone }}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    -
+                                </span>
+
+                            {% endif %}
+
+                        </dd>
+
+
+                        <!-- EMAIL -->
+
+                        <dt class="col-sm-4 text-muted">
+                            Email
+                        </dt>
+
+                        <dd class="col-sm-8">
+
+                            {% if preinscription.candidat.email %}
+
+                                <i class="bi bi-envelope me-1"></i>
+
+                                {{ preinscription.candidat.email }}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    -
+                                </span>
+
+                            {% endif %}
+
+                        </dd>
+
+
+                        <!-- =================================================
+                             ÉTAT ÉTUDIANT
+                        ================================================== -->
+
+                        <dt class="col-sm-4 text-muted">
+                            Étudiant
+                        </dt>
+
+                        <dd class="col-sm-8">
+
+
+                            {% if preinscription.candidat.etudiant %}
+
+
+                                {% if preinscription.candidat.etudiant.actif %}
+
+                                    <!-- ============================
+                                         ÉTUDIANT ACTIF
+                                    ============================= -->
+
+                                    <span class="badge bg-success">
+
+                                        <i class="bi bi-check-circle-fill me-1"></i>
+
+                                        Actif
+
+                                    </span>
+
+
+                                    <div class="small text-muted mt-2">
+
+                                        <i class="bi bi-credit-card-2-front me-1"></i>
+
+                                        Matricule :
+
+                                        <strong class="text-dark">
+
+                                            {{ preinscription.candidat.etudiant.matricule }}
+
+                                        </strong>
+
+                                    </div>
+
+
+                                {% else %}
+
+                                    <!-- ============================
+                                         ÉTUDIANT INACTIF
+                                    ============================= -->
+
+                                    <span class="badge bg-secondary">
+
+                                        <i class="bi bi-pause-circle me-1"></i>
+
+                                        Inactif
+
+                                    </span>
+
+
+                                    <div class="small text-muted mt-2">
+
+                                        Matricule :
+
+                                        <strong>
+
+                                            {{ preinscription.candidat.etudiant.matricule }}
+
+                                        </strong>
+
+                                    </div>
+
+
+                                {% endif %}
+
+
+                            {% else %}
+
+                                <!-- ============================
+                                     PAS ENCORE ÉTUDIANT
+                                ============================= -->
+
+                                <span class="badge bg-warning text-dark">
+
+                                    <i class="bi bi-hourglass-split me-1"></i>
+
+                                    Pas encore étudiant
+
+                                </span>
+
+                            {% endif %}
+
+
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================================
+             CARD FORMATION
+        ====================================================== -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-header bg-light py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-mortarboard-fill me-2 text-primary"></i>
+
+                        Formation
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <dl class="row mb-0">
+
+
+                        <!-- NUMÉRO -->
+
+                        <dt class="col-sm-5 text-muted">
+                            Numéro
+                        </dt>
+
+                        <dd class="col-sm-7 fw-bold">
+                            {{ preinscription.numero }}
+                        </dd>
+
+
+                        <!-- ANNÉE ACADÉMIQUE -->
+
+                        <dt class="col-sm-5 text-muted">
+                            Année académique
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            {{ preinscription.annee_academique }}
+
+                        </dd>
+
+
+                        <!-- FILIÈRE -->
+
+                        <dt class="col-sm-5 text-muted">
+                            Filière
+                        </dt>
+
+                        <dd class="col-sm-7 fw-semibold">
+
+                            {{ preinscription.filiere }}
+
+                        </dd>
+
+
+                        <!-- NIVEAU -->
+
+                        <dt class="col-sm-5 text-muted">
+                            Niveau
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            {{ preinscription.niveau }}
+
+                        </dd>
+
+
+                        <!-- =================================================
+                             STATUT
+                        ================================================== -->
+
+                        <dt class="col-sm-5 text-muted">
+                            Statut
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+
+                            {% if preinscription.statut == "VALIDEE" %}
+
+                                <span class="badge bg-success">
+
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+
+                                    Validée
+
+                                </span>
+
+
+                            {% elif preinscription.statut == "REJETEE" %}
+
+                                <span class="badge bg-danger">
+
+                                    <i class="bi bi-x-circle-fill me-1"></i>
+
+                                    Rejetée
+
+                                </span>
+
+
+                            {% elif preinscription.statut == "DOSSIER_COMPLET" %}
+
+                                <span class="badge bg-info text-dark">
+
+                                    <i class="bi bi-folder-check me-1"></i>
+
+                                    Dossier complet
+
+                                </span>
+
+
+                            {% elif preinscription.statut == "DOSSIER_INCOMPLET" %}
+
+                                <span class="badge bg-warning text-dark">
+
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+
+                                    Dossier incomplet
+
+                                </span>
+
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    <i class="bi bi-hourglass-split me-1"></i>
+
+                                    En attente
+
+                                </span>
+
+                            {% endif %}
+
+
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================================
+             SUIVI DU DOSSIER
+        ====================================================== -->
+
+        <div class="col-12">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-header bg-light py-3">
+
+                    <h5 class="mb-0 fw-bold">
+
+                        <i class="bi bi-clock-history me-2 text-primary"></i>
+
+                        Suivi du dossier
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+
+                        <!-- DATE DEMANDE -->
+
+                        <div class="col-md-6">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <div class="text-muted small mb-1">
+
+                                    <i class="bi bi-calendar-plus me-1"></i>
+
+                                    Date de demande
+
+                                </div>
+
+                                <div class="fw-semibold">
+
+                                    {{ preinscription.date_demande|date:"d/m/Y à H:i" }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- DATE TRAITEMENT -->
+
+                        <div class="col-md-6">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <div class="text-muted small mb-1">
+
+                                    <i class="bi bi-calendar-check me-1"></i>
+
+                                    Date de traitement
+
+                                </div>
+
+                                <div class="fw-semibold">
+
+                                    {% if preinscription.date_traitement %}
+
+                                        {{ preinscription.date_traitement|date:"d/m/Y à H:i" }}
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+                                            Non traitée
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <hr class="my-4">
+
+
+                    <!-- OBSERVATION -->
+
+                    <div>
+
+                        <div class="fw-semibold mb-2">
+
+                            <i class="bi bi-chat-left-text me-1"></i>
+
+                            Observation
+
+                        </div>
+
+
+                        {% if preinscription.observation %}
+
+                            <div class="bg-light rounded p-3">
+
+                                {{ preinscription.observation|linebreaks }}
+
+                            </div>
+
+                        {% else %}
+
+                            <div class="text-muted">
+
+                                <i class="bi bi-info-circle me-1"></i>
+
+                                Aucune observation.
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             RÉSUMÉ DE L'ÉTAT
+        ====================================================== -->
+
+        <div class="col-12">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+
+                        <div>
+
+                            <h6 class="fw-bold mb-1">
+
+                                <i class="bi bi-info-circle me-1 text-primary"></i>
+
+                                État du dossier
+
+                            </h6>
+
+                            <p class="text-muted mb-0 small">
+
+                                {% if preinscription.statut == "VALIDEE" %}
+
+                                    La préinscription est validée.
+
+                                    {% if preinscription.candidat.etudiant %}
+
+                                        {% if preinscription.candidat.etudiant.actif %}
+
+                                            L'étudiant est actuellement actif dans le système.
+
+                                        {% else %}
+
+                                            L'étudiant existe mais il est actuellement inactif.
+
+                                        {% endif %}
+
+                                    {% else %}
+
+                                        L'étudiant n'a pas encore été créé.
+
+                                    {% endif %}
+
+                                {% elif preinscription.statut == "REJETEE" %}
+
+                                    Cette préinscription a été rejetée.
+
+                                {% elif preinscription.statut == "DOSSIER_COMPLET" %}
+
+                                    Le dossier est complet et peut être traité.
+
+                                {% elif preinscription.statut == "DOSSIER_INCOMPLET" %}
+
+                                    Le dossier est incomplet et nécessite des informations supplémentaires.
+
+                                {% else %}
+
+                                    La préinscription est actuellement en attente de traitement.
+
+                                {% endif %}
+
+                            </p>
+
+                        </div>
+
+
+                        <!-- INDICATEUR -->
+
+                        <div>
+
+                            {% if preinscription.statut == "VALIDEE" %}
+
+                                {% if preinscription.candidat.etudiant %}
+
+                                    {% if preinscription.candidat.etudiant.actif %}
+
+                                        <span class="badge bg-success fs-6 px-3 py-2">
+
+                                            <i class="bi bi-person-check-fill me-1"></i>
+
+                                            Étudiant actif
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+
+                                            <i class="bi bi-person-dash me-1"></i>
+
+                                            Étudiant inactif
+
+                                        </span>
+
+                                    {% endif %}
+
+                                {% else %}
+
+                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+
+                                        <i class="bi bi-person-plus me-1"></i>
+
+                                        Activation nécessaire
+
+                                    </span>
+
+                                {% endif %}
+
+                            {% else %}
+
+                                <span class="badge bg-secondary fs-6 px-3 py-2">
+
+                                    <i class="bi bi-hourglass-split me-1"></i>
+
+                                    Dossier en traitement
+
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div>
+{% endblock %}
