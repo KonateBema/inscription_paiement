@@ -24,7 +24,11 @@ SECRET_KEY = os.environ.get(
     "django-insecure-dev-only-key-change-in-production"
 )
 
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+# IMPORTANT :
+# En local, DEBUG sera True par défaut.
+# Sur Render, on mettra DEBUG=False dans les variables
+# d'environnement.
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 
 # ============================================================
@@ -37,14 +41,19 @@ ALLOWED_HOSTS = [
 ]
 
 # Render fournit automatiquement cette variable
-RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+RENDER_EXTERNAL_HOSTNAME = os.environ.get(
+    "RENDER_EXTERNAL_HOSTNAME"
+)
 
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# Permet également d'ajouter manuellement un domaine
+# Permet d'ajouter manuellement des domaines
 # depuis les variables d'environnement Render.
-EXTRA_ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "")
+EXTRA_ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS",
+    ""
+)
 
 if EXTRA_ALLOWED_HOSTS:
     ALLOWED_HOSTS.extend(
@@ -66,7 +75,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Applications du projet
+    # Application du projet
     "gestion",
 ]
 
@@ -78,7 +87,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise pour servir les fichiers statiques sur Render
+    # WhiteNoise pour les fichiers statiques
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -105,7 +114,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "BACKEND": (
+            "django.template.backends.django."
+            "DjangoTemplates"
+        ),
 
         "DIRS": [
             BASE_DIR / "gestion" / "templates",
@@ -128,16 +140,17 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 #
-# En local :
-#     SQLite (db.sqlite3)
+# LOCAL :
+#     SQLite -> db.sqlite3
 #
-# Sur Render :
-#     PostgreSQL via DATABASE_URL
-#
+# RENDER :
+#     PostgreSQL -> DATABASE_URL
+# ============================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:
+
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -146,7 +159,9 @@ if DATABASE_URL:
             ssl_require=True,
         )
     }
+
 else:
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -212,7 +227,6 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-
 # WhiteNoise
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -243,24 +257,36 @@ LOGOUT_REDIRECT_URL = "/connexion/"
 # EMAIL
 # ============================================================
 #
-# En développement : affichage des emails dans le terminal.
+# LOCAL :
+#     Les emails sont affichés dans le terminal.
 #
-# Sur Render, on pourra remplacer ces variables par SMTP.
-#
+# RENDER :
+#     Les variables SMTP peuvent être configurées
+#     dans les Environment Variables.
+# ============================================================
 
 EMAIL_BACKEND = os.environ.get(
     "EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend"
 )
 
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_HOST = os.environ.get(
+    "EMAIL_HOST",
+    ""
+)
 
 EMAIL_PORT = int(
-    os.environ.get("EMAIL_PORT", "587")
+    os.environ.get(
+        "EMAIL_PORT",
+        "587"
+    )
 )
 
 EMAIL_USE_TLS = (
-    os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+    os.environ.get(
+        "EMAIL_USE_TLS",
+        "True"
+    ).lower() == "true"
 )
 
 EMAIL_HOST_USER = os.environ.get(
@@ -283,7 +309,9 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # DEFAULT PRIMARY KEY
 # ============================================================
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = (
+    "django.db.models.BigAutoField"
+)
 
 
 # ============================================================
@@ -292,7 +320,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 if not DEBUG:
 
+    # --------------------------------------------------------
     # HTTPS
+    # --------------------------------------------------------
+
     SECURE_PROXY_SSL_HEADER = (
         "HTTP_X_FORWARDED_PROTO",
         "https",
@@ -304,8 +335,9 @@ if not DEBUG:
 
     CSRF_COOKIE_SECURE = True
 
-    # Sécurité navigateur
-    SECURE_BROWSER_XSS_FILTER = True
+    # --------------------------------------------------------
+    # SECURITY HEADERS
+    # --------------------------------------------------------
 
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
