@@ -5,8 +5,6 @@ Django settings for config project.
 import os
 from pathlib import Path
 
-import dj_database_url
-
 
 # ============================================================
 # BASE
@@ -24,11 +22,21 @@ SECRET_KEY = os.environ.get(
     "django-insecure-dev-only-key-change-in-production"
 )
 
-# IMPORTANT :
-# En local, DEBUG sera True par défaut.
-# Sur Render, on mettra DEBUG=False dans les variables
-# d'environnement.
-DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
+# ------------------------------------------------------------
+# DEBUG
+# ------------------------------------------------------------
+#
+# LOCAL :
+#     DEBUG=True par défaut
+#
+# RENDER :
+#     Mettre DEBUG=False dans les Environment Variables
+# ============================================================
+
+DEBUG = os.environ.get(
+    "DEBUG",
+    "True"
+).lower() == "true"
 
 
 # ============================================================
@@ -40,22 +48,36 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-# Render fournit automatiquement cette variable
+# ------------------------------------------------------------
+# Render fournit automatiquement le nom d'hôte externe
+# ------------------------------------------------------------
+
 RENDER_EXTERNAL_HOSTNAME = os.environ.get(
     "RENDER_EXTERNAL_HOSTNAME"
 )
 
 if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    ALLOWED_HOSTS.append(
+        RENDER_EXTERNAL_HOSTNAME
+    )
 
-# Permet d'ajouter manuellement des domaines
-# depuis les variables d'environnement Render.
+
+# ------------------------------------------------------------
+# Domaines supplémentaires
+#
+# Exemple dans Render :
+#
+# ALLOWED_HOSTS=
+# gestion-bulletins-gem.onrender.com
+# ============================================================
+
 EXTRA_ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
     ""
 )
 
 if EXTRA_ALLOWED_HOSTS:
+
     ALLOWED_HOSTS.extend(
         host.strip()
         for host in EXTRA_ALLOWED_HOSTS.split(",")
@@ -68,6 +90,11 @@ if EXTRA_ALLOWED_HOSTS:
 # ============================================================
 
 INSTALLED_APPS = [
+
+    # --------------------------------------------------------
+    # Django
+    # --------------------------------------------------------
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -75,7 +102,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
+    # --------------------------------------------------------
     # Application du projet
+    # --------------------------------------------------------
+
     "gestion",
 ]
 
@@ -85,16 +115,54 @@ INSTALLED_APPS = [
 # ============================================================
 
 MIDDLEWARE = [
+
+    # --------------------------------------------------------
+    # Sécurité
+    # --------------------------------------------------------
+
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise pour les fichiers statiques
+    # --------------------------------------------------------
+    # WhiteNoise
+    # Gestion des fichiers statiques sur Render
+    # --------------------------------------------------------
+
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
+    # --------------------------------------------------------
+    # Sessions
+    # --------------------------------------------------------
+
     "django.contrib.sessions.middleware.SessionMiddleware",
+
+    # --------------------------------------------------------
+    # Requêtes communes
+    # --------------------------------------------------------
+
     "django.middleware.common.CommonMiddleware",
+
+    # --------------------------------------------------------
+    # CSRF
+    # --------------------------------------------------------
+
     "django.middleware.csrf.CsrfViewMiddleware",
+
+    # --------------------------------------------------------
+    # Authentification
+    # --------------------------------------------------------
+
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+
+    # --------------------------------------------------------
+    # Messages
+    # --------------------------------------------------------
+
     "django.contrib.messages.middleware.MessageMiddleware",
+
+    # --------------------------------------------------------
+    # Clickjacking
+    # --------------------------------------------------------
+
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -113,6 +181,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ============================================================
 
 TEMPLATES = [
+
     {
         "BACKEND": (
             "django.template.backends.django."
@@ -126,9 +195,13 @@ TEMPLATES = [
         "APP_DIRS": True,
 
         "OPTIONS": {
+
             "context_processors": [
+
                 "django.template.context_processors.request",
+
                 "django.contrib.auth.context_processors.auth",
+
                 "django.contrib.messages.context_processors.messages",
             ],
         },
@@ -140,34 +213,27 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 #
+# SQLite utilisé actuellement.
+#
 # LOCAL :
-#     SQLite -> db.sqlite3
+#     db.sqlite3
 #
 # RENDER :
-#     PostgreSQL -> DATABASE_URL
+#     db.sqlite3
+#
+# IMPORTANT :
+# Pour le moment, aucune connexion PostgreSQL n'est utilisée.
 # ============================================================
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASES = {
 
-if DATABASE_URL:
+    "default": {
 
-    DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True,
-        )
+        "ENGINE": "django.db.backends.sqlite3",
+
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-
-else:
-
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 
 # ============================================================
@@ -175,24 +241,28 @@ else:
 # ============================================================
 
 AUTH_PASSWORD_VALIDATORS = [
+
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "UserAttributeSimilarityValidator"
         ),
     },
+
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "MinimumLengthValidator"
         ),
     },
+
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "CommonPasswordValidator"
         ),
     },
+
     {
         "NAME": (
             "django.contrib.auth.password_validation."
@@ -221,13 +291,25 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
+# ------------------------------------------------------------
+# Dossier contenant les fichiers statiques de l'application
+# ------------------------------------------------------------
+
 STATICFILES_DIRS = [
     BASE_DIR / "gestion" / "static",
 ]
 
+# ------------------------------------------------------------
+# Dossier généré par collectstatic
+# ------------------------------------------------------------
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+
+# ------------------------------------------------------------
 # WhiteNoise
+# ------------------------------------------------------------
+
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
@@ -235,6 +317,14 @@ STATICFILES_STORAGE = (
 
 # ============================================================
 # MEDIA FILES
+# ============================================================
+#
+# Exemple :
+#
+# media/
+# └── candidats/
+#     └── photos/
+#
 # ============================================================
 
 MEDIA_URL = "/media/"
@@ -261,8 +351,8 @@ LOGOUT_REDIRECT_URL = "/connexion/"
 #     Les emails sont affichés dans le terminal.
 #
 # RENDER :
-#     Les variables SMTP peuvent être configurées
-#     dans les Environment Variables.
+#     Tu peux configurer SMTP avec les variables
+#     d'environnement.
 # ============================================================
 
 EMAIL_BACKEND = os.environ.get(
@@ -323,20 +413,25 @@ if not DEBUG:
     # --------------------------------------------------------
     # HTTPS
     # --------------------------------------------------------
+    #
+    # Render utilise un proxy HTTPS devant Django.
+    # --------------------------------------------------------
 
     SECURE_PROXY_SSL_HEADER = (
         "HTTP_X_FORWARDED_PROTO",
         "https",
     )
 
+    # Redirige HTTP vers HTTPS
     SECURE_SSL_REDIRECT = True
 
+    # Cookies sécurisés
     SESSION_COOKIE_SECURE = True
 
     CSRF_COOKIE_SECURE = True
 
     # --------------------------------------------------------
-    # SECURITY HEADERS
+    # Security Headers
     # --------------------------------------------------------
 
     SECURE_CONTENT_TYPE_NOSNIFF = True
