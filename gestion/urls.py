@@ -297,6 +297,11 @@ path("inscriptions/<int:pk>/fiche-pdf/",views.fiche_inscription_pdf,name="fiche_
 path("preinscriptions/<int:pk>/valider/",views.preinscription_valider,name="preinscription_valider",),
 path("preinscriptions/<int:pk>/activer-etudiant/",views.preinscription_activer_etudiant,name="preinscription_activer_etudiant",),
 # path("preinscriptions/<int:pk>/",views.preinscription_detail,name="preinscription_detail",),
+path(
+    "inscriptions/<int:inscription_pk>/paiement/",
+    views.paiement_inscription_create,
+    name="paiement_inscription_create",
+),
 
 
 

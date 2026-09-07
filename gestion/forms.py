@@ -238,9 +238,22 @@ class PreinscriptionForm(forms.ModelForm):
 # FORMULAIRE INSCRIPTION
 # =========================================================
 
+from django import forms
+
+from .models import (
+    EcheanceInscription,
+    PaiementInscription,
+)
+
+
+# ============================================================
+# FORMULAIRE INSCRIPTION
+# ============================================================
+
 class InscriptionForm(forms.ModelForm):
 
     class Meta:
+
         model = Inscription
 
         fields = [
@@ -250,6 +263,8 @@ class InscriptionForm(forms.ModelForm):
             "niveau",
             "classe",
             "type_inscription",
+            "montant_inscription",
+            "mode_paiement_inscription",
             "statut",
             "observation",
         ]
@@ -292,6 +307,23 @@ class InscriptionForm(forms.ModelForm):
                 }
             ),
 
+            "montant_inscription": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ex : 100000",
+                    "min": "0",
+                    "step": "1",
+                    "inputmode": "numeric",
+                }
+            ),
+
+            "mode_paiement_inscription": forms.Select(
+                attrs={
+                    "class": "form-select",
+                    "id": "id_mode_paiement_inscription",
+                }
+            ),
+
             "statut": forms.Select(
                 attrs={
                     "class": "form-select",
@@ -311,10 +343,6 @@ class InscriptionForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
-        # =====================================================
-        # ÉTUDIANTS
-        # =====================================================
-
         self.fields["etudiant"].queryset = (
             Etudiant.objects
             .select_related("candidat")
@@ -325,18 +353,10 @@ class InscriptionForm(forms.ModelForm):
             )
         )
 
-        # =====================================================
-        # ANNÉES ACADÉMIQUES
-        # =====================================================
-
         self.fields["annee_academique"].queryset = (
             AnneeAcademique.objects
             .order_by("-id")
         )
-
-        # =====================================================
-        # FILIÈRES
-        # =====================================================
 
         self.fields["filiere"].queryset = (
             Filiere.objects
@@ -344,19 +364,11 @@ class InscriptionForm(forms.ModelForm):
             .order_by("nom")
         )
 
-        # =====================================================
-        # NIVEAUX
-        # =====================================================
-
         self.fields["niveau"].queryset = (
             Niveau.objects
             .filter(active=True)
             .order_by("ordre")
         )
-
-        # =====================================================
-        # CLASSES
-        # =====================================================
 
         self.fields["classe"].queryset = (
             Classe.objects
@@ -373,29 +385,16 @@ class InscriptionForm(forms.ModelForm):
             )
         )
 
-        # =====================================================
-        # LABELS
-        # =====================================================
-
         self.fields["etudiant"].label = "Étudiant"
-
         self.fields["annee_academique"].label = "Année académique"
-
         self.fields["filiere"].label = "Filière"
-
         self.fields["niveau"].label = "Niveau"
-
         self.fields["classe"].label = "Classe"
-
         self.fields["type_inscription"].label = "Type d'inscription"
-
+        self.fields["montant_inscription"].label = "Frais d'inscription"
+        self.fields["mode_paiement_inscription"].label = "Mode de paiement"
         self.fields["statut"].label = "Statut"
-
         self.fields["observation"].label = "Observation"
-
-    # =========================================================
-    # VALIDATION
-    # =========================================================
 
     def clean(self):
 
@@ -403,11 +402,23 @@ class InscriptionForm(forms.ModelForm):
 
         etudiant = cleaned_data.get("etudiant")
         annee_academique = cleaned_data.get("annee_academique")
+        filiere = cleaned_data.get("filiere")
+        niveau = cleaned_data.get("niveau")
+        classe = cleaned_data.get("classe")
+        montant = cleaned_data.get("montant_inscription")
+        mode_paiement = cleaned_data.get(
+            "mode_paiement_inscription"
+        )
 
-        # -----------------------------------------------------
-        # Vérifier qu'un étudiant n'a pas déjà une inscription
-        # pour cette année académique
-        # -----------------------------------------------------
+        if montant is not None:
+
+            if montant < 0:
+
+                self.add_error(
+                    "montant_inscription",
+                    "Le montant des frais d'inscription "
+                    "ne peut pas être négatif."
+                )
 
         if etudiant and annee_academique:
 
@@ -416,7 +427,6 @@ class InscriptionForm(forms.ModelForm):
                 annee_academique=annee_academique,
             )
 
-            # En modification, exclure l'inscription actuelle
             if self.instance and self.instance.pk:
 
                 inscriptions = inscriptions.exclude(
@@ -429,14 +439,6 @@ class InscriptionForm(forms.ModelForm):
                     "Cet étudiant possède déjà une inscription "
                     "pour cette année académique."
                 )
-
-        # -----------------------------------------------------
-        # Vérifier la cohérence Filière / Niveau / Classe
-        # -----------------------------------------------------
-
-        filiere = cleaned_data.get("filiere")
-        niveau = cleaned_data.get("niveau")
-        classe = cleaned_data.get("classe")
 
         if classe:
 
@@ -458,7 +460,8 @@ class InscriptionForm(forms.ModelForm):
 
             if (
                 annee_academique
-                and classe.annee_academique_id != annee_academique.id
+                and classe.annee_academique_id
+                != annee_academique.id
             ):
 
                 self.add_error(
@@ -467,8 +470,153 @@ class InscriptionForm(forms.ModelForm):
                     "à l'année académique choisie."
                 )
 
+        if mode_paiement not in [
+            "UNE_TRANCHE",
+            "DEUX_TRANCHES",
+        ]:
+
+            self.add_error(
+                "mode_paiement_inscription",
+                "Veuillez sélectionner un mode de paiement valide."
+            )
+
+        if montant is None:
+
+            self.add_error(
+                "montant_inscription",
+                "Veuillez renseigner le montant "
+                "des frais d'inscription."
+            )
+
+        elif montant == 0:
+
+            self.add_error(
+                "montant_inscription",
+                "Le montant des frais d'inscription "
+                "doit être supérieur à 0."
+            )
+
         return cleaned_data
-    
+
+
+# ============================================================
+# FORMULAIRE PAIEMENT INSCRIPTION
+# ============================================================
+
+class PaiementInscriptionForm(forms.ModelForm):
+
+    class Meta:
+
+        model = PaiementInscription
+
+        fields = [
+            "echeance",
+            "montant",
+            "mode_paiement",
+            "observation",
+        ]
+
+        widgets = {
+
+            "echeance": forms.Select(
+                attrs={
+                    "class": "form-select",
+                }
+            ),
+
+            "montant": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": "1",
+                    "step": "1",
+                    "inputmode": "numeric",
+                    "placeholder": "Ex : 50000",
+                }
+            ),
+
+            "mode_paiement": forms.Select(
+                attrs={
+                    "class": "form-select",
+                }
+            ),
+
+            "observation": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Observation éventuelle...",
+                }
+            ),
+        }
+
+    def __init__(
+        self,
+        *args,
+        inscription=None,
+        **kwargs
+    ):
+
+        super().__init__(*args, **kwargs)
+
+        self.inscription = inscription
+
+        if inscription:
+
+            self.fields["echeance"].queryset = (
+                EcheanceInscription.objects
+                .filter(
+                    inscription=inscription
+                )
+                .order_by("id")
+            )
+
+        self.fields["echeance"].label = "Tranche"
+        self.fields["montant"].label = "Montant payé"
+        self.fields["mode_paiement"].label = "Mode de paiement"
+        self.fields["observation"].label = "Observation"
+
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        echeance = cleaned_data.get("echeance")
+        montant = cleaned_data.get("montant")
+
+        if not echeance or montant is None:
+            return cleaned_data
+
+        if montant <= 0:
+
+            self.add_error(
+                "montant",
+                "Le montant du paiement doit être supérieur à 0."
+            )
+
+            return cleaned_data
+
+        if self.inscription:
+
+            if echeance.inscription_id != self.inscription.id:
+
+                self.add_error(
+                    "echeance",
+                    "Cette tranche n'appartient pas "
+                    "à cette inscription."
+                )
+
+                return cleaned_data
+
+        reste = echeance.reste_a_payer
+
+        if montant > reste:
+
+            self.add_error(
+                "montant",
+                f"Le montant maximum autorisé pour cette tranche "
+                f"est de {reste:,.0f} FCFA."
+            )
+
+        return cleaned_data
 # =========================================================
 # FORMULAIRE SCOLARITÉ
 # =========================================================
@@ -1083,5 +1231,7 @@ class PaiementFormAAA(forms.ModelForm):
                 )
 
         return cleaned_data
+    
+
 
 

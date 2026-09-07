@@ -4,22 +4,21 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db import transaction
-import io
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
 from .models import Inscription
-from .forms import (PreinscriptionForm,InscriptionForm,ScolariteForm,EcheanceForm,PaiementForm,CandidatForm)
+from .forms import (PreinscriptionForm,InscriptionForm,ScolariteForm,EcheanceForm,PaiementForm,CandidatForm, PaiementInscriptionForm,)
 from .models import (Candidat,Preinscription,Etudiant,Classe,Scolarite,Paiement,Echeance,Recu,)
-import qrcode
-from pathlib import Path
 from django.utils import timezone
-from django.conf import settings
-from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth import logout
+from .models import (
+    EcheanceInscription,
+)
+from .models import (
+    Inscription,
+    EcheanceInscription,
+    PaiementInscription,
+    RecuInscription,
+)
 
 @require_POST
 def deconnexion(request):
@@ -629,23 +628,68 @@ def inscriptions_liste(request):
 
 
 @login_required
+@transaction.atomic
 def inscription_create(request):
+
     if request.method == "POST":
+
         form = InscriptionForm(request.POST)
 
         if form.is_valid():
+
             inscription = form.save()
+
+            montant = inscription.montant_inscription
+
+            # ======================================================
+            # UNE TRANCHE
+            # ======================================================
+
+            if (
+                inscription.mode_paiement_inscription
+                == "UNE_TRANCHE"
+            ):
+
+                EcheanceInscription.objects.create(
+                    inscription=inscription,
+                    type_tranche="TRANCHE_1",
+                    montant=montant,
+                )
+
+            # ======================================================
+            # DEUX TRANCHES
+            # ======================================================
+
+            else:
+
+                tranche_1 = montant / 2
+                tranche_2 = montant - tranche_1
+
+                EcheanceInscription.objects.create(
+                    inscription=inscription,
+                    type_tranche="TRANCHE_1",
+                    montant=tranche_1,
+                )
+
+                EcheanceInscription.objects.create(
+                    inscription=inscription,
+                    type_tranche="TRANCHE_2",
+                    montant=tranche_2,
+                )
 
             messages.success(
                 request,
-                f"L'inscription {inscription.numero} a été créée avec succès."
+                f"L'inscription {inscription.numero} "
+                f"a été créée avec succès."
             )
 
             return redirect(
                 "gestion:inscription_detail",
                 pk=inscription.pk
             )
+
     else:
+
         form = InscriptionForm()
 
     return render(
@@ -661,6 +705,7 @@ def inscription_create(request):
 
 @login_required
 def inscription_detail(request, pk):
+
     inscription = get_object_or_404(
         Inscription.objects.select_related(
             "etudiant__candidat",
@@ -672,41 +717,248 @@ def inscription_detail(request, pk):
         pk=pk
     )
 
+    echeances_inscription = (
+        inscription.echeances_inscription
+        .prefetch_related("paiements")
+        .all()
+    )
+
+    paiements_inscription = (
+        inscription.paiements_inscription
+        .select_related("echeance")
+        .order_by("-date_paiement")
+    )
+
     return render(
         request,
         "gestion/inscriptions/detail.html",
         {
-            "inscription": inscription
+            "inscription": inscription,
+            "echeances_inscription": echeances_inscription,
+            "paiements_inscription": paiements_inscription,
         }
     )
-
-
+    
 @login_required
+@transaction.atomic
 def inscription_update(request, pk):
+
     inscription = get_object_or_404(
         Inscription,
         pk=pk
     )
 
     if request.method == "POST":
+
         form = InscriptionForm(
             request.POST,
             instance=inscription
         )
 
         if form.is_valid():
+
             inscription = form.save()
+
+            montant = inscription.montant_inscription
+
+            echeances = list(
+                inscription.echeances_inscription
+                .order_by("id")
+            )
+
+            # ======================================================
+            # UNE TRANCHE
+            # ======================================================
+
+            if (
+                inscription.mode_paiement_inscription
+                == "UNE_TRANCHE"
+            ):
+
+                if echeances:
+
+                    tranche_1 = echeances[0]
+
+                    if tranche_1.montant_paye > montant:
+
+                        form.add_error(
+                            "montant_inscription",
+                            "Le nouveau montant est inférieur "
+                            "au montant déjà payé."
+                        )
+
+                        transaction.set_rollback(True)
+
+                        return render(
+                            request,
+                            "gestion/inscriptions/form.html",
+                            {
+                                "form": form,
+                                "titre": "Modifier l'inscription",
+                                "bouton": "Enregistrer les modifications",
+                                "inscription": inscription,
+                            }
+                        )
+
+                    tranche_1.montant = montant
+                    tranche_1.save()
+
+                    for tranche in echeances[1:]:
+
+                        if tranche.montant_paye > 0:
+
+                            form.add_error(
+                                "mode_paiement_inscription",
+                                "Impossible de supprimer la "
+                                "tranche 2 car elle contient "
+                                "déjà un paiement."
+                            )
+
+                            transaction.set_rollback(True)
+
+                            return render(
+                                request,
+                                "gestion/inscriptions/form.html",
+                                {
+                                    "form": form,
+                                    "titre": "Modifier l'inscription",
+                                    "bouton": "Enregistrer les modifications",
+                                    "inscription": inscription,
+                                }
+                            )
+
+                        tranche.delete()
+
+                else:
+
+                    EcheanceInscription.objects.create(
+                        inscription=inscription,
+                        type_tranche="TRANCHE_1",
+                        montant=montant,
+                    )
+
+            # ======================================================
+            # DEUX TRANCHES
+            # ======================================================
+
+            else:
+
+                tranche_1_montant = montant / 2
+                tranche_2_montant = montant - tranche_1_montant
+
+                tranche_1 = next(
+                    (
+                        e for e in echeances
+                        if e.type_tranche == "TRANCHE_1"
+                    ),
+                    None
+                )
+
+                tranche_2 = next(
+                    (
+                        e for e in echeances
+                        if e.type_tranche == "TRANCHE_2"
+                    ),
+                    None
+                )
+
+                # --------------------------------------------------
+                # TRANCHE 1
+                # --------------------------------------------------
+
+                if tranche_1:
+
+                    if (
+                        tranche_1.montant_paye
+                        > tranche_1_montant
+                    ):
+
+                        form.add_error(
+                            "montant_inscription",
+                            "Le nouveau montant est inférieur "
+                            "au montant déjà payé de la tranche 1."
+                        )
+
+                        transaction.set_rollback(True)
+
+                        return render(
+                            request,
+                            "gestion/inscriptions/form.html",
+                            {
+                                "form": form,
+                                "titre": "Modifier l'inscription",
+                                "bouton": "Enregistrer les modifications",
+                                "inscription": inscription,
+                            }
+                        )
+
+                    tranche_1.montant = tranche_1_montant
+                    tranche_1.save()
+
+                else:
+
+                    tranche_1 = (
+                        EcheanceInscription.objects.create(
+                            inscription=inscription,
+                            type_tranche="TRANCHE_1",
+                            montant=tranche_1_montant,
+                        )
+                    )
+
+                # --------------------------------------------------
+                # TRANCHE 2
+                # --------------------------------------------------
+
+                if tranche_2:
+
+                    if (
+                        tranche_2.montant_paye
+                        > tranche_2_montant
+                    ):
+
+                        form.add_error(
+                            "montant_inscription",
+                            "Le nouveau montant est inférieur "
+                            "au montant déjà payé de la tranche 2."
+                        )
+
+                        transaction.set_rollback(True)
+
+                        return render(
+                            request,
+                            "gestion/inscriptions/form.html",
+                            {
+                                "form": form,
+                                "titre": "Modifier l'inscription",
+                                "bouton": "Enregistrer les modifications",
+                                "inscription": inscription,
+                            }
+                        )
+
+                    tranche_2.montant = tranche_2_montant
+                    tranche_2.save()
+
+                else:
+
+                    EcheanceInscription.objects.create(
+                        inscription=inscription,
+                        type_tranche="TRANCHE_2",
+                        montant=tranche_2_montant,
+                    )
 
             messages.success(
                 request,
-                f"L'inscription {inscription.numero} a été modifiée avec succès."
+                f"L'inscription {inscription.numero} "
+                f"a été modifiée avec succès."
             )
 
             return redirect(
                 "gestion:inscription_detail",
                 pk=inscription.pk
             )
+
     else:
+
         form = InscriptionForm(
             instance=inscription
         )
@@ -721,7 +973,6 @@ def inscription_update(request, pk):
             "inscription": inscription,
         }
     )
-
 # =========================================================
 # SCOLARITÉS
 # =========================================================
@@ -1499,8 +1750,2347 @@ def recu_detail(request, pk):
 # PDF DU REÇU UIC
 # ============================================================
 
+
 @login_required
-def recu_pdf(request, pk):
+def fiche_inscription_pdfAAAA(request, pk):
+
+    # ============================================================
+    # IMPORTS
+    # ============================================================
+
+    import io
+    import os
+    from datetime import datetime
+
+    from django.shortcuts import get_object_or_404
+    from django.http import FileResponse
+
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.utils import ImageReader
+
+    # ============================================================
+    # RÉCUPÉRATION DE L'INSCRIPTION
+    # ============================================================
+
+    inscription = get_object_or_404(
+        Inscription.objects.select_related(
+            "etudiant",
+            "etudiant__candidat",
+            "annee_academique",
+            "filiere",
+            "niveau",
+            "classe",
+        ),
+        pk=pk,
+    )
+
+    candidat = inscription.etudiant.candidat
+
+    # ============================================================
+    # PDF
+    # ============================================================
+
+    buffer = io.BytesIO()
+
+    largeur, hauteur = A4
+
+    marge_gauche = 1.5 * cm
+    marge_droite = 1.5 * cm
+    marge_haut = 1.2 * cm
+    marge_bas = 1.2 * cm
+
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    pdf.setTitle(f"Fiche d'inscription - {inscription.numero}")
+
+    # ============================================================
+    # COULEURS
+    # ============================================================
+
+    bleu = colors.HexColor("#0d6efd")
+    bleu_fonce = colors.HexColor("#12355B")
+    gris = colors.HexColor("#6c757d")
+    gris_clair = colors.HexColor("#f5f7fa")
+    gris_bordure = colors.HexColor("#d9dee5")
+    noir = colors.HexColor("#212529")
+    blanc = colors.white
+
+    # ============================================================
+    # CADRE GLOBAL
+    # ============================================================
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+    pdf.roundRect(
+        marge_gauche,
+        marge_bas,
+        largeur - marge_gauche - marge_droite,
+        hauteur - marge_haut - marge_bas,
+        8,
+        stroke=1,
+        fill=0,
+    )
+
+    # ============================================================
+    # EN-TÊTE (fond blanc, logo à gauche)
+    # ============================================================
+
+    entete_h = 2.6 * cm
+    entete_y = hauteur - marge_haut - entete_h  # bas de la zone d'en-tête
+
+    # -- Logo (à gauche) --
+    logo_taille = 2.0 * cm
+    logo_x = marge_gauche + 0.4 * cm
+    logo_y = entete_y + (entete_h - logo_taille) / 2
+
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+
+    # cherche d'abord via les staticfiles Django (fonctionne quel que soit
+    # l'environnement), puis en repli le chemin relatif au projet
+    LOGO_PATH = finders.find("gestion/images/logo.jpeg")
+    if not LOGO_PATH:
+        LOGO_PATH = os.path.join(settings.BASE_DIR, "gestion", "static", "gestion", "images", "logo.jpeg")
+
+    logo_affiche = False
+    if os.path.exists(LOGO_PATH):
+        try:
+            pdf.drawImage(
+                ImageReader(LOGO_PATH),
+                logo_x, logo_y,
+                width=logo_taille, height=logo_taille,
+                preserveAspectRatio=True,
+                anchor="c",
+                mask="auto",
+            )
+            logo_affiche = True
+        except Exception:
+            logo_affiche = False
+
+    if not logo_affiche:
+        pdf.setFillColor(gris_clair)
+        pdf.setStrokeColor(gris_bordure)
+        pdf.setLineWidth(0.8)
+        pdf.roundRect(logo_x, logo_y, logo_taille, logo_taille, 4, stroke=1, fill=1)
+        pdf.setFillColor(gris)
+        pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawCentredString(logo_x + logo_taille / 2, logo_y + logo_taille / 2 - 0.1 * cm, "LOGO")
+
+    # -- Texte de l'en-tête (centré sur la page) --
+    cursor = hauteur - marge_haut - 0.75 * cm
+
+    pdf.setFillColor(bleu_fonce)
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawCentredString(largeur / 2, cursor, "UNIVERSITÉ INTERNATIONALE DE COCODY")
+
+    cursor -= 0.5 * cm
+    pdf.setFillColor(gris)
+    pdf.setFont("Helvetica", 8.5)
+    pdf.drawCentredString(largeur / 2, cursor, "Service des Inscriptions et de la Scolarité")
+
+    cursor -= 0.65 * cm
+    pdf.setFillColor(bleu)
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawCentredString(largeur / 2, cursor, "FICHE D'INSCRIPTION")
+
+    # ============================================================
+    # LIGNE SOUS L'EN-TÊTE
+    # ============================================================
+
+    cursor = entete_y - 0.4 * cm
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+    pdf.line(marge_gauche + 0.4 * cm, cursor, largeur - marge_droite - 0.4 * cm, cursor)
+
+    cursor -= 0.5 * cm
+
+    # ============================================================
+    # RANGÉE INFOS RAPIDES : date d'édition (gauche) / N° inscription (droite)
+    # ============================================================
+
+    ligne_h = 0.95 * cm
+
+    # -- N° inscription (droite) — libellé et valeur empilés pour
+    #    ne jamais se chevaucher, quelle que soit la longueur du numéro --
+    box_w = 5.4 * cm
+    box_h = ligne_h
+    box_x = largeur - marge_droite - 0.4 * cm - box_w
+    box_y = cursor - box_h
+
+    numero_texte = str(inscription.numero)
+    taille_numero = 10
+    # réduit automatiquement la taille si le numéro est très long
+    while pdf.stringWidth(numero_texte, "Helvetica-Bold", taille_numero) > box_w - 0.55 * cm and taille_numero > 7:
+        taille_numero -= 0.5
+
+    pdf.setFillColor(gris_clair)
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+    pdf.roundRect(box_x, box_y, box_w, box_h, 5, stroke=1, fill=1)
+    pdf.setFillColor(bleu)
+    pdf.rect(box_x, box_y, 0.15 * cm, box_h, stroke=0, fill=1)
+
+    pdf.setFillColor(gris)
+    pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawString(box_x + 0.35 * cm, box_y + box_h - 0.34 * cm, "N° INSCRIPTION")
+    pdf.setFillColor(noir)
+    pdf.setFont("Helvetica-Bold", taille_numero)
+    pdf.drawString(box_x + 0.35 * cm, box_y + 0.28 * cm, numero_texte)
+
+    # -- Date d'édition (gauche) --
+    date_edition = datetime.now().strftime("%d/%m/%Y à %H:%M")
+    edit_x = marge_gauche + 0.4 * cm
+
+    pdf.setFillColor(gris)
+    pdf.setFont("Helvetica", 8)
+    # pdf.drawString(edit_x, box_y + box_h / 2 - 0.12 * cm, f"Document édité le {date_edition}")
+
+    # bas réel de cette rangée
+    cursor = box_y
+
+    # ============================================================
+    # FONCTION CHAMP — renvoie le bas réel du champ
+    # ============================================================
+
+    def champ(label, valeur, x, y, largeur_champ=6.2 * cm, taille=9):
+        if valeur is None or valeur == "":
+            valeur = "Non renseigné"
+        valeur = str(valeur)
+
+        pdf.setFillColor(gris)
+        pdf.setFont("Helvetica-Bold", 6.8)
+        pdf.drawString(x, y, label.upper())
+
+        pdf.setFillColor(noir)
+        pdf.setFont("Helvetica", taille)
+        pdf.drawString(x, y - 0.38 * cm, valeur[:60])
+
+        pdf.setStrokeColor(gris_bordure)
+        pdf.setLineWidth(0.4)
+        pdf.line(x, y - 0.52 * cm, x + largeur_champ, y - 0.52 * cm)
+
+        return y - 0.52 * cm
+
+    # ============================================================
+    # CONSTANTES DE MISE EN PAGE
+    # ============================================================
+
+    TITLE_TO_FIELDS = 0.75 * cm
+    ROW_H_1COL = 1.0 * cm
+    ROW_H_2COL = 1.05 * cm
+    SECTION_GAP = 0.65 * cm
+
+    def titre_section(x, y, numero, texte, largeur_ligne):
+        # petit badge numéroté pour un rendu plus soigné
+        rayon = 0.32 * cm
+        pdf.setFillColor(bleu)
+        pdf.circle(x + rayon, y + 0.12 * cm, rayon, stroke=0, fill=1)
+        pdf.setFillColor(blanc)
+        pdf.setFont("Helvetica-Bold", 8.5)
+        pdf.drawCentredString(x + rayon, y - 0.06 * cm, str(numero))
+
+        pdf.setFillColor(bleu_fonce)
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(x + 2 * rayon + 0.25 * cm, y, texte)
+
+        pdf.setStrokeColor(bleu)
+        pdf.setLineWidth(0.8)
+        pdf.line(x, y - 0.28 * cm, x + largeur_ligne, y - 0.28 * cm)
+
+    # ============================================================
+    # ZONE DE CONTENU : la photo démarre désormais à la même hauteur
+    # que le titre de la section 1, nettement sous la rangée du
+    # numéro d'inscription — plus aucun chevauchement possible.
+    # ============================================================
+
+    cursor -= SECTION_GAP
+    content_top = cursor
+
+    section_x = marge_gauche + 0.4 * cm
+    section_width = largeur - marge_gauche - marge_droite - 0.8 * cm
+
+    # ============================================================
+    # PHOTO
+    # ============================================================
+
+    photo_w = 3.2 * cm
+    photo_h = 3.8 * cm
+    photo_x = largeur - marge_droite - photo_w - 0.2 * cm
+    # le haut de la photo démarre sous la ligne de séparation du titre de
+    # section (tracée à content_top - 0.28cm), avec une marge de sécurité
+    photo_y = content_top - 0.55 * cm - photo_h
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+
+    photo_affichee = False
+    if getattr(candidat, "photo", None):
+        try:
+            photo_path = candidat.photo.path
+            if os.path.exists(photo_path):
+                pdf.drawImage(
+                    ImageReader(photo_path),
+                    photo_x, photo_y,
+                    width=photo_w, height=photo_h,
+                    preserveAspectRatio=True,
+                    anchor="c",
+                    mask="auto",
+                )
+                pdf.rect(photo_x, photo_y, photo_w, photo_h, fill=0, stroke=1)
+                photo_affichee = True
+        except Exception:
+            photo_affichee = False
+
+    if not photo_affichee:
+        pdf.setFillColor(gris_clair)
+        pdf.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
+        pdf.setFillColor(gris)
+        pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2, "PHOTO")
+
+    # ============================================================
+    # 1. IDENTIFICATION
+    # ============================================================
+
+    titre_section(section_x, content_top, 1, "IDENTIFICATION DE L'ÉTUDIANT", section_width)
+
+    info_x = section_x
+    info_y = content_top - TITLE_TO_FIELDS
+    largeur_info = 6.3 * cm
+
+    bas1 = champ("Matricule", inscription.etudiant.matricule, info_x, info_y, largeur_info)
+    bas2 = champ("Nom", candidat.nom, info_x, info_y - ROW_H_1COL, largeur_info)
+    bas3 = champ("Prénoms", candidat.prenoms, info_x, info_y - 2 * ROW_H_1COL, largeur_info)
+    bas4 = champ("Sexe", getattr(candidat, "sexe", None), info_x, info_y - 3 * ROW_H_1COL, largeur_info)
+
+    fin_section1 = min(bas4, photo_y)
+
+    # ============================================================
+    # 2. INFORMATIONS PERSONNELLES
+    # ============================================================
+
+    section_y = fin_section1 - SECTION_GAP
+    titre_section(section_x, section_y, 2, "INFORMATIONS PERSONNELLES", section_width)
+
+    col1 = section_x
+    col2 = section_x + 8.3 * cm
+    info_y = section_y - TITLE_TO_FIELDS
+
+    date_naissance = getattr(candidat, "date_naissance", None)
+    if date_naissance:
+        date_naissance = date_naissance.strftime("%d/%m/%Y")
+
+    champ("Date de naissance", date_naissance, col1, info_y, 6.5 * cm)
+    champ("Lieu de naissance", getattr(candidat, "lieu_naissance", None), col2, info_y, 6.5 * cm)
+
+    champ("Nationalité", getattr(candidat, "nationalite", None), col1, info_y - ROW_H_2COL, 6.5 * cm)
+    champ("Téléphone", getattr(candidat, "telephone", None), col2, info_y - ROW_H_2COL, 6.5 * cm)
+
+    champ("Email", getattr(candidat, "email", None), col1, info_y - 2 * ROW_H_2COL, 6.5 * cm, taille=8.5)
+    champ("Ville", getattr(candidat, "ville", None), col2, info_y - 2 * ROW_H_2COL, 6.5 * cm)
+
+    bas_adresse = champ(
+        "Adresse", getattr(candidat, "adresse", None),
+        col1, info_y - 3 * ROW_H_2COL, 13.0 * cm, taille=8.5,
+    )
+
+    # ============================================================
+    # 3. INFORMATIONS ACADÉMIQUES
+    # ============================================================
+
+    section_y = bas_adresse - SECTION_GAP
+    titre_section(section_x, section_y, 3, "INFORMATIONS ACADÉMIQUES", section_width)
+
+    info_y = section_y - TITLE_TO_FIELDS
+
+    champ("Année académique", getattr(inscription.annee_academique, "libelle", None), col1, info_y, 6.5 * cm)
+    champ("Filière", getattr(inscription.filiere, "nom", None), col2, info_y, 6.5 * cm, taille=8.5)
+
+    champ("Code filière", getattr(inscription.filiere, "code", None), col1, info_y - ROW_H_2COL, 6.5 * cm)
+    champ("Niveau", getattr(inscription.niveau, "nom", None), col2, info_y - ROW_H_2COL, 6.5 * cm)
+
+    champ("Classe", getattr(inscription.classe, "nom", None), col1, info_y - 2 * ROW_H_2COL, 6.5 * cm)
+
+    type_inscription = getattr(inscription, "type_inscription", "")
+    if type_inscription == "PREMIERE_INSCRIPTION":
+        type_label = "Première inscription"
+    elif type_inscription:
+        type_label = "Réinscription"
+    else:
+        type_label = "Non renseigné"
+
+    statut = getattr(inscription, "statut", "")
+    statut_labels = {
+        "INSCRIT": "Inscrit",
+        "EN_ATTENTE": "En attente",
+        "ANNULE": "Annulé",
+    }
+    statut_label = statut_labels.get(statut, statut or "Non renseigné")
+
+    champ("Type d'inscription", type_label, col2, info_y - 2 * ROW_H_2COL, 6.5 * cm)
+    champ("Statut", statut_label, col1, info_y - 3 * ROW_H_2COL, 6.5 * cm)
+
+    date_inscription = getattr(inscription, "date_inscription", None)
+    if date_inscription:
+        date_inscription = date_inscription.strftime("%d/%m/%Y à %H:%M")
+
+    bas_section3 = champ("Date d'inscription", date_inscription, col2, info_y - 3 * ROW_H_2COL, 6.5 * cm)
+
+    # ============================================================
+    # BADGE STATUT (repère visuel rapide, rendu plus "officiel")
+    # ============================================================
+
+    statut_colors = {
+        "Inscrit": colors.HexColor("#198754"),
+        "En attente": colors.HexColor("#fd7e14"),
+        "Annulé": colors.HexColor("#dc3545"),
+    }
+    couleur_statut = statut_colors.get(statut_label, gris)
+
+    badge_w = 3.2 * cm
+    badge_h = 0.6 * cm
+    badge_x = largeur - marge_droite - 0.4 * cm - badge_w
+    badge_y = bas_section3 + 0.3 * cm
+
+    pdf.setFillColor(couleur_statut)
+    pdf.roundRect(badge_x, badge_y, badge_w, badge_h, 4, stroke=0, fill=1)
+    pdf.setFillColor(blanc)
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawCentredString(badge_x + badge_w / 2, badge_y + 0.19 * cm, statut_label.upper())
+
+    # ============================================================
+    # SIGNATURES
+    # ============================================================
+
+    signature_y = 4.1 * cm
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.6)
+    pdf.line(marge_gauche + 0.4 * cm, signature_y + 0.5 * cm, largeur - marge_droite - 0.4 * cm, signature_y + 0.5 * cm)
+
+    pdf.setFillColor(bleu_fonce)
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(marge_gauche + 0.5 * cm, signature_y, "Signature de l'étudiant")
+    pdf.drawString(largeur - marge_droite - 6.5 * cm, signature_y, "Visa de l'administration")
+
+    pdf.setDash(2, 2)
+    pdf.line(marge_gauche + 0.5 * cm, signature_y - 1.6 * cm, marge_gauche + 6.5 * cm, signature_y - 1.6 * cm)
+    pdf.line(
+        largeur - marge_droite - 6.5 * cm, signature_y - 1.6 * cm,
+        largeur - marge_droite - 0.5 * cm, signature_y - 1.6 * cm,
+    )
+    pdf.setDash()
+
+    # ============================================================
+    # PIED DE PAGE
+    # ============================================================
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.5)
+    pdf.line(marge_gauche + 0.4 * cm, 1.65 * cm, largeur - marge_droite - 0.4 * cm, 1.65 * cm)
+
+    pdf.setFillColor(gris)
+    pdf.setFont("Helvetica", 7)
+    pdf.drawCentredString(largeur / 2, 1.35 * cm, "Document généré par le système de gestion des inscriptions")
+    pdf.drawCentredString(largeur / 2, 1.0 * cm, "Université Internationale de Cocody")
+
+    # ============================================================
+    # FINALISATION
+    # ============================================================
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    return FileResponse(
+        buffer,
+        as_attachment=False,
+        filename=f"fiche_inscription_{inscription.numero}.pdf",
+        content_type="application/pdf",
+    )
+
+
+
+@login_required
+def fiche_inscription_pdf(request, pk):
+
+    # ============================================================
+    # IMPORTS
+    # ============================================================
+
+    import io
+    import os
+
+    from django.shortcuts import get_object_or_404
+    from django.http import FileResponse
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.utils import ImageReader
+
+    # ============================================================
+    # RÉCUPÉRATION DE L'INSCRIPTION
+    # ============================================================
+
+    inscription = get_object_or_404(
+        Inscription.objects.select_related(
+            "etudiant",
+            "etudiant__candidat",
+            "annee_academique",
+            "filiere",
+            "niveau",
+            "classe",
+        ),
+        pk=pk,
+    )
+
+    candidat = inscription.etudiant.candidat
+
+    # ============================================================
+    # FRAIS D'INSCRIPTION
+    # ============================================================
+
+    echeances_inscription = list(
+        inscription.echeances_inscription
+        .order_by("id")
+    )
+
+    montant_inscription = (
+        inscription.montant_inscription or 0
+    )
+
+    montant_inscription_paye = (
+        inscription.montant_inscription_paye
+    )
+
+    reste_inscription = (
+        inscription.reste_inscription_a_payer
+    )
+
+    mode_inscription = (
+        inscription.get_mode_paiement_inscription_display()
+    )
+
+    # ============================================================
+    # PDF
+    # ============================================================
+
+    buffer = io.BytesIO()
+
+    largeur, hauteur = A4
+
+    marge_gauche = 1.5 * cm
+    marge_droite = 1.5 * cm
+    marge_haut = 1.2 * cm
+    marge_bas = 1.2 * cm
+
+    pdf = canvas.Canvas(
+        buffer,
+        pagesize=A4
+    )
+
+    pdf.setTitle(
+        f"Fiche d'inscription - {inscription.numero}"
+    )
+
+    # ============================================================
+    # COULEURS
+    # ============================================================
+
+    bleu = colors.HexColor("#0d6efd")
+    bleu_fonce = colors.HexColor("#12355B")
+    gris = colors.HexColor("#6c757d")
+    gris_clair = colors.HexColor("#f5f7fa")
+    gris_bordure = colors.HexColor("#d9dee5")
+    noir = colors.HexColor("#212529")
+    blanc = colors.white
+    vert = colors.HexColor("#198754")
+    orange = colors.HexColor("#fd7e14")
+    rouge = colors.HexColor("#dc3545")
+
+    # ============================================================
+    # CADRE GLOBAL
+    # ============================================================
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+
+    pdf.roundRect(
+        marge_gauche,
+        marge_bas,
+        largeur - marge_gauche - marge_droite,
+        hauteur - marge_haut - marge_bas,
+        8,
+        stroke=1,
+        fill=0,
+    )
+
+    # ============================================================
+    # EN-TÊTE
+    # ============================================================
+
+    entete_h = 2.6 * cm
+
+    entete_y = (
+        hauteur
+        - marge_haut
+        - entete_h
+    )
+
+    # ============================================================
+    # LOGO
+    # ============================================================
+
+    logo_taille = 2.0 * cm
+
+    logo_x = (
+        marge_gauche
+        + 0.4 * cm
+    )
+
+    logo_y = (
+        entete_y
+        + (entete_h - logo_taille) / 2
+    )
+
+    LOGO_PATH = finders.find(
+        "gestion/images/logo.jpeg"
+    )
+
+    if not LOGO_PATH:
+        LOGO_PATH = os.path.join(
+            settings.BASE_DIR,
+            "gestion",
+            "static",
+            "gestion",
+            "images",
+            "logo.jpeg"
+        )
+
+    logo_affiche = False
+
+    if LOGO_PATH and os.path.exists(LOGO_PATH):
+        try:
+            pdf.drawImage(
+                ImageReader(LOGO_PATH),
+                logo_x,
+                logo_y,
+                width=logo_taille,
+                height=logo_taille,
+                preserveAspectRatio=True,
+                anchor="c",
+                mask="auto",
+            )
+
+            logo_affiche = True
+
+        except Exception:
+            logo_affiche = False
+
+    if not logo_affiche:
+
+        pdf.setFillColor(gris_clair)
+        pdf.setStrokeColor(gris_bordure)
+        pdf.setLineWidth(0.8)
+
+        pdf.roundRect(
+            logo_x,
+            logo_y,
+            logo_taille,
+            logo_taille,
+            4,
+            stroke=1,
+            fill=1
+        )
+
+        pdf.setFillColor(gris)
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawCentredString(
+            logo_x + logo_taille / 2,
+            logo_y + logo_taille / 2 - 0.1 * cm,
+            "LOGO"
+        )
+
+    # ============================================================
+    # TEXTE EN-TÊTE
+    # ============================================================
+
+    cursor = (
+        hauteur
+        - marge_haut
+        - 0.75 * cm
+    )
+
+    pdf.setFillColor(bleu_fonce)
+    pdf.setFont(
+        "Helvetica-Bold",
+        15
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        cursor,
+        "UNIVERSITÉ INTERNATIONALE DE COCODY"
+    )
+
+    cursor -= 0.5 * cm
+
+    pdf.setFillColor(gris)
+    pdf.setFont(
+        "Helvetica",
+        8.5
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        cursor,
+        "Service des Inscriptions et de la Scolarité"
+    )
+
+    cursor -= 0.65 * cm
+
+    pdf.setFillColor(bleu)
+    pdf.setFont(
+        "Helvetica-Bold",
+        13
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        cursor,
+        "FICHE D'INSCRIPTION"
+    )
+
+    # ============================================================
+    # LIGNE SOUS L'EN-TÊTE
+    # ============================================================
+
+    cursor = (
+        entete_y
+        - 0.4 * cm
+    )
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+
+    pdf.line(
+        marge_gauche + 0.4 * cm,
+        cursor,
+        largeur - marge_droite - 0.4 * cm,
+        cursor
+    )
+
+    cursor -= 0.5 * cm
+
+    # ============================================================
+    # N° INSCRIPTION
+    # ============================================================
+
+    ligne_h = 0.95 * cm
+    box_w = 5.4 * cm
+    box_h = ligne_h
+
+    box_x = (
+        largeur
+        - marge_droite
+        - 0.4 * cm
+        - box_w
+    )
+
+    box_y = (
+        cursor
+        - box_h
+    )
+
+    numero_texte = str(inscription.numero)
+    taille_numero = 10
+
+    while (
+        pdf.stringWidth(
+            numero_texte,
+            "Helvetica-Bold",
+            taille_numero
+        )
+        > box_w - 0.55 * cm
+        and taille_numero > 7
+    ):
+        taille_numero -= 0.5
+
+    pdf.setFillColor(gris_clair)
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+
+    pdf.roundRect(
+        box_x,
+        box_y,
+        box_w,
+        box_h,
+        5,
+        stroke=1,
+        fill=1
+    )
+
+    pdf.setFillColor(bleu)
+
+    pdf.rect(
+        box_x,
+        box_y,
+        0.15 * cm,
+        box_h,
+        stroke=0,
+        fill=1
+    )
+
+    pdf.setFillColor(gris)
+    pdf.setFont(
+        "Helvetica-Bold",
+        7
+    )
+
+    pdf.drawString(
+        box_x + 0.35 * cm,
+        box_y + box_h - 0.34 * cm,
+        "N° INSCRIPTION"
+    )
+
+    pdf.setFillColor(noir)
+    pdf.setFont(
+        "Helvetica-Bold",
+        taille_numero
+    )
+
+    pdf.drawString(
+        box_x + 0.35 * cm,
+        box_y + 0.28 * cm,
+        numero_texte
+    )
+
+    # ============================================================
+    # BAS DE LA RANGÉE
+    # ============================================================
+
+    cursor = box_y
+
+    # ============================================================
+    # FONCTION CHAMP
+    # ============================================================
+
+    def champ(
+        label,
+        valeur,
+        x,
+        y,
+        largeur_champ=6.2 * cm,
+        taille=9
+    ):
+
+        if valeur is None or valeur == "":
+            valeur = "Non renseigné"
+
+        valeur = str(valeur)
+
+        pdf.setFillColor(gris)
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            x,
+            y,
+            label.upper()
+        )
+
+        pdf.setFillColor(noir)
+        pdf.setFont(
+            "Helvetica",
+            taille
+        )
+
+        pdf.drawString(
+            x,
+            y - 0.38 * cm,
+            valeur[:60]
+        )
+
+        pdf.setStrokeColor(gris_bordure)
+        pdf.setLineWidth(0.4)
+
+        pdf.line(
+            x,
+            y - 0.52 * cm,
+            x + largeur_champ,
+            y - 0.52 * cm
+        )
+
+        return y - 0.52 * cm
+
+    # ============================================================
+    # CONSTANTES
+    # ============================================================
+
+    TITLE_TO_FIELDS = 0.75 * cm
+    ROW_H_1COL = 1.0 * cm
+    ROW_H_2COL = 1.05 * cm
+    SECTION_GAP = 0.65 * cm
+
+    # ============================================================
+    # TITRE DE SECTION
+    # ============================================================
+
+    def titre_section(
+        x,
+        y,
+        numero,
+        texte,
+        largeur_ligne
+    ):
+
+        rayon = 0.32 * cm
+
+        pdf.setFillColor(bleu)
+
+        pdf.circle(
+            x + rayon,
+            y + 0.12 * cm,
+            rayon,
+            stroke=0,
+            fill=1
+        )
+
+        pdf.setFillColor(blanc)
+        pdf.setFont(
+            "Helvetica-Bold",
+            8.5
+        )
+
+        pdf.drawCentredString(
+            x + rayon,
+            y - 0.06 * cm,
+            str(numero)
+        )
+
+        pdf.setFillColor(bleu_fonce)
+        pdf.setFont(
+            "Helvetica-Bold",
+            10
+        )
+
+        pdf.drawString(
+            x + 2 * rayon + 0.25 * cm,
+            y,
+            texte
+        )
+
+        pdf.setStrokeColor(bleu)
+        pdf.setLineWidth(0.8)
+
+        pdf.line(
+            x,
+            y - 0.28 * cm,
+            x + largeur_ligne,
+            y - 0.28 * cm
+        )
+
+    # ============================================================
+    # ZONE DE CONTENU
+    # ============================================================
+
+    cursor -= SECTION_GAP
+
+    content_top = cursor
+
+    section_x = (
+        marge_gauche
+        + 0.4 * cm
+    )
+
+    section_width = (
+        largeur
+        - marge_gauche
+        - marge_droite
+        - 0.8 * cm
+    )
+
+    # ============================================================
+    # PHOTO
+    # ============================================================
+
+    photo_w = 3.2 * cm
+    photo_h = 3.8 * cm
+
+    photo_x = (
+        largeur
+        - marge_droite
+        - photo_w
+        - 0.2 * cm
+    )
+
+    photo_y = (
+        content_top
+        - 0.55 * cm
+        - photo_h
+    )
+
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.8)
+
+    photo_affichee = False
+
+    if getattr(candidat, "photo", None):
+
+        try:
+
+            photo_path = candidat.photo.path
+
+            if os.path.exists(photo_path):
+
+                pdf.drawImage(
+                    ImageReader(photo_path),
+                    photo_x,
+                    photo_y,
+                    width=photo_w,
+                    height=photo_h,
+                    preserveAspectRatio=True,
+                    anchor="c",
+                    mask="auto",
+                )
+
+                pdf.rect(
+                    photo_x,
+                    photo_y,
+                    photo_w,
+                    photo_h,
+                    fill=0,
+                    stroke=1
+                )
+
+                photo_affichee = True
+
+        except Exception:
+
+            photo_affichee = False
+
+    if not photo_affichee:
+
+        pdf.setFillColor(gris_clair)
+
+        pdf.rect(
+            photo_x,
+            photo_y,
+            photo_w,
+            photo_h,
+            fill=1,
+            stroke=1
+        )
+
+        pdf.setFillColor(gris)
+        pdf.setFont(
+            "Helvetica-Bold",
+            8
+        )
+
+        pdf.drawCentredString(
+            photo_x + photo_w / 2,
+            photo_y + photo_h / 2,
+            "PHOTO"
+        )
+
+    # ============================================================
+    # 1. IDENTIFICATION
+    # ============================================================
+
+    titre_section(
+        section_x,
+        content_top,
+        1,
+        "IDENTIFICATION DE L'ÉTUDIANT",
+        section_width
+    )
+
+    info_x = section_x
+
+    info_y = (
+        content_top
+        - TITLE_TO_FIELDS
+    )
+
+    largeur_info = 6.3 * cm
+
+    bas1 = champ(
+        "Matricule",
+        inscription.etudiant.matricule,
+        info_x,
+        info_y,
+        largeur_info
+    )
+
+    bas2 = champ(
+        "Nom",
+        candidat.nom,
+        info_x,
+        info_y - ROW_H_1COL,
+        largeur_info
+    )
+
+    bas3 = champ(
+        "Prénoms",
+        candidat.prenoms,
+        info_x,
+        info_y - 2 * ROW_H_1COL,
+        largeur_info
+    )
+
+    bas4 = champ(
+        "Sexe",
+        getattr(
+            candidat,
+            "sexe",
+            None
+        ),
+        info_x,
+        info_y - 3 * ROW_H_1COL,
+        largeur_info
+    )
+
+    fin_section1 = min(
+        bas4,
+        photo_y
+    )
+
+    # ============================================================
+    # 2. INFORMATIONS PERSONNELLES
+    # ============================================================
+
+    section_y = (
+        fin_section1
+        - SECTION_GAP
+    )
+
+    titre_section(
+        section_x,
+        section_y,
+        2,
+        "INFORMATIONS PERSONNELLES",
+        section_width
+    )
+
+    col1 = section_x
+
+    col2 = (
+        section_x
+        + 8.3 * cm
+    )
+
+    info_y = (
+        section_y
+        - TITLE_TO_FIELDS
+    )
+
+    date_naissance = getattr(
+        candidat,
+        "date_naissance",
+        None
+    )
+
+    if date_naissance:
+
+        date_naissance = (
+            date_naissance.strftime(
+                "%d/%m/%Y"
+            )
+        )
+
+    champ(
+        "Date de naissance",
+        date_naissance,
+        col1,
+        info_y,
+        6.5 * cm
+    )
+
+    champ(
+        "Lieu de naissance",
+        getattr(
+            candidat,
+            "lieu_naissance",
+            None
+        ),
+        col2,
+        info_y,
+        6.5 * cm
+    )
+
+    champ(
+        "Nationalité",
+        getattr(
+            candidat,
+            "nationalite",
+            None
+        ),
+        col1,
+        info_y - ROW_H_2COL,
+        6.5 * cm
+    )
+
+    champ(
+        "Téléphone",
+        getattr(
+            candidat,
+            "telephone",
+            None
+        ),
+        col2,
+        info_y - ROW_H_2COL,
+        6.5 * cm
+    )
+
+    champ(
+        "Email",
+        getattr(
+            candidat,
+            "email",
+            None
+        ),
+        col1,
+        info_y - 2 * ROW_H_2COL,
+        6.5 * cm,
+        taille=8.5
+    )
+
+    champ(
+        "Ville",
+        getattr(
+            candidat,
+            "ville",
+            None
+        ),
+        col2,
+        info_y - 2 * ROW_H_2COL,
+        6.5 * cm
+    )
+
+    bas_adresse = champ(
+        "Adresse",
+        getattr(
+            candidat,
+            "adresse",
+            None
+        ),
+        col1,
+        info_y - 3 * ROW_H_2COL,
+        13.0 * cm,
+        taille=8.5,
+    )
+
+    # ============================================================
+    # 3. INFORMATIONS ACADÉMIQUES
+    # ============================================================
+
+    section_y = (
+        bas_adresse
+        - SECTION_GAP
+    )
+
+    titre_section(
+        section_x,
+        section_y,
+        3,
+        "INFORMATIONS ACADÉMIQUES",
+        section_width
+    )
+
+    info_y = (
+        section_y
+        - TITLE_TO_FIELDS
+    )
+
+    champ(
+        "Année académique",
+        getattr(
+            inscription.annee_academique,
+            "libelle",
+            None
+        ),
+        col1,
+        info_y,
+        6.5 * cm
+    )
+
+    champ(
+        "Filière",
+        getattr(
+            inscription.filiere,
+            "nom",
+            None
+        ),
+        col2,
+        info_y,
+        6.5 * cm,
+        taille=8.5
+    )
+
+    champ(
+        "Code filière",
+        getattr(
+            inscription.filiere,
+            "code",
+            None
+        ),
+        col1,
+        info_y - ROW_H_2COL,
+        6.5 * cm
+    )
+
+    champ(
+        "Niveau",
+        getattr(
+            inscription.niveau,
+            "nom",
+            None
+        ),
+        col2,
+        info_y - ROW_H_2COL,
+        6.5 * cm
+    )
+
+    champ(
+        "Classe",
+        getattr(
+            inscription.classe,
+            "nom",
+            None
+        ),
+        col1,
+        info_y - 2 * ROW_H_2COL,
+        6.5 * cm
+    )
+
+    type_inscription = getattr(
+        inscription,
+        "type_inscription",
+        ""
+    )
+
+    if type_inscription == "PREMIERE_INSCRIPTION":
+
+        type_label = (
+            "Première inscription"
+        )
+
+    elif type_inscription:
+
+        type_label = "Réinscription"
+
+    else:
+
+        type_label = "Non renseigné"
+
+    statut = getattr(
+        inscription,
+        "statut",
+        ""
+    )
+
+    statut_labels = {
+        "INSCRIT": "Inscrit",
+        "EN_ATTENTE": "En attente",
+        "ANNULE": "Annulé",
+    }
+
+    statut_label = statut_labels.get(
+        statut,
+        statut or "Non renseigné"
+    )
+
+    champ(
+        "Type d'inscription",
+        type_label,
+        col2,
+        info_y - 2 * ROW_H_2COL,
+        6.5 * cm
+    )
+
+    champ(
+        "Statut",
+        statut_label,
+        col1,
+        info_y - 3 * ROW_H_2COL,
+        6.5 * cm
+    )
+
+    date_inscription = getattr(
+        inscription,
+        "date_inscription",
+        None
+    )
+
+    if date_inscription:
+
+        date_inscription = (
+            date_inscription.strftime(
+                "%d/%m/%Y à %H:%M"
+            )
+        )
+
+    bas_section3 = champ(
+        "Date d'inscription",
+        date_inscription,
+        col2,
+        info_y - 3 * ROW_H_2COL,
+        6.5 * cm
+    )
+
+    # ============================================================
+    # 4. FRAIS D'INSCRIPTION
+    # ============================================================
+
+    section_y = (
+        bas_section3
+        - 0.48 * cm
+    )
+
+    titre_section(
+        section_x,
+        section_y,
+        4,
+        "FRAIS D'INSCRIPTION",
+        section_width
+    )
+
+    # ------------------------------------------------------------
+    # RÉSUMÉ FINANCIER COMPACT
+    # ------------------------------------------------------------
+
+    frais_top = (
+        section_y
+        - 0.55 * cm
+    )
+
+    resume_h = 1.45 * cm
+
+    pdf.setFillColor(gris_clair)
+    pdf.setStrokeColor(gris_bordure)
+    pdf.setLineWidth(0.6)
+
+    pdf.roundRect(
+        section_x,
+        frais_top - resume_h,
+        section_width,
+        resume_h,
+        5,
+        stroke=1,
+        fill=1
+    )
+
+    resume_col_w = (
+        section_width / 4
+    )
+
+    resume_labels = [
+        "MONTANT TOTAL",
+        "MONTANT PAYÉ",
+        "RESTE À PAYER",
+        "MODE DE PAIEMENT",
+    ]
+
+    resume_values = [
+        f"{montant_inscription:,.0f} FCFA",
+        f"{montant_inscription_paye:,.0f} FCFA",
+        f"{reste_inscription:,.0f} FCFA",
+        mode_inscription or "Non renseigné",
+    ]
+
+    resume_colors = [
+        bleu_fonce,
+        vert,
+        rouge if reste_inscription > 0 else vert,
+        noir,
+    ]
+
+    for i in range(4):
+
+        x = (
+            section_x
+            + i * resume_col_w
+        )
+
+        if i > 0:
+
+            pdf.setStrokeColor(
+                gris_bordure
+            )
+
+            pdf.setLineWidth(0.5)
+
+            pdf.line(
+                x,
+                frais_top - resume_h + 0.18 * cm,
+                x,
+                frais_top - 0.18 * cm
+            )
+
+        pdf.setFillColor(gris)
+        pdf.setFont(
+            "Helvetica-Bold",
+            6
+        )
+
+        pdf.drawString(
+            x + 0.18 * cm,
+            frais_top - 0.40 * cm,
+            resume_labels[i]
+        )
+
+        pdf.setFillColor(
+            resume_colors[i]
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            8
+        )
+
+        valeur = resume_values[i]
+
+        if i == 3:
+
+            pdf.setFont(
+                "Helvetica",
+                7.5
+            )
+
+        pdf.drawString(
+            x + 0.18 * cm,
+            frais_top - 0.88 * cm,
+            valeur[:25]
+        )
+
+    # ------------------------------------------------------------
+    # DÉTAIL DES TRANCHES
+    # (le bloc "PROGRESSION DU PAIEMENT" a été retiré ;
+    #  on enchaîne directement après le résumé financier)
+    # ------------------------------------------------------------
+
+    echeance_title_y = (
+        frais_top
+        - resume_h
+        - 0.55 * cm
+    )
+
+    pdf.setFillColor(
+        bleu_fonce
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        7.5
+    )
+
+    pdf.drawString(
+        section_x,
+        echeance_title_y,
+        "DÉTAIL DES TRANCHES"
+    )
+
+    # ------------------------------------------------------------
+    # BADGES SUR LA MÊME LIGNE
+    # ------------------------------------------------------------
+
+    if inscription.inscription_soldee:
+
+        statut_frais = (
+            "FRAIS D'INSCRIPTION SOLDÉS"
+        )
+
+        couleur_frais = vert
+
+    else:
+
+        statut_frais = (
+            "FRAIS D'INSCRIPTION NON SOLDÉS"
+        )
+
+        couleur_frais = orange
+
+    badge_h = 0.48 * cm
+
+    badge_w_frais = 5.8 * cm
+
+    badge_x_frais = (
+        section_x
+        + section_width
+        - badge_w_frais
+        - 3.45 * cm
+    )
+
+    badge_y_frais = (
+        echeance_title_y
+        - 0.10 * cm
+    )
+
+    pdf.setFillColor(
+        couleur_frais
+    )
+
+    pdf.roundRect(
+        badge_x_frais,
+        badge_y_frais - badge_h + 0.10 * cm,
+        badge_w_frais,
+        badge_h,
+        3,
+        stroke=0,
+        fill=1
+    )
+
+    pdf.setFillColor(
+        blanc
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        6.5
+    )
+
+    pdf.drawCentredString(
+        badge_x_frais
+        + badge_w_frais / 2,
+        badge_y_frais
+        - 0.22 * cm,
+        statut_frais
+    )
+
+    # ------------------------------------------------------------
+    # BADGE STATUT INSCRIPTION
+    # ------------------------------------------------------------
+
+    statut_colors = {
+        "Inscrit": vert,
+        "En attente": orange,
+        "Annulé": rouge,
+    }
+
+    couleur_statut_inscription = (
+        statut_colors.get(
+            statut_label,
+            gris
+        )
+    )
+
+    badge_w_statut = 3.1 * cm
+
+    badge_x_statut = (
+        section_x
+        + section_width
+        - badge_w_statut
+    )
+
+    badge_y_statut = (
+        echeance_title_y
+        - 0.10 * cm
+    )
+
+    pdf.setFillColor(
+        couleur_statut_inscription
+    )
+
+    pdf.roundRect(
+        badge_x_statut,
+        badge_y_statut - badge_h + 0.10 * cm,
+        badge_w_statut,
+        badge_h,
+        3,
+        stroke=0,
+        fill=1
+    )
+
+    pdf.setFillColor(
+        blanc
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        7
+    )
+
+    pdf.drawCentredString(
+        badge_x_statut
+        + badge_w_statut / 2,
+        badge_y_statut
+        - 0.22 * cm,
+        statut_label.upper()
+    )
+
+    # ------------------------------------------------------------
+    # TABLEAU DES TRANCHES COMPACT
+    # ------------------------------------------------------------
+
+    table_x = section_x
+
+    table_y = (
+        echeance_title_y
+        - 0.48 * cm
+    )
+
+    col_tranche = 3.2 * cm
+    col_montant = 3.3 * cm
+    col_paye = 3.3 * cm
+    col_reste = 3.3 * cm
+
+    col_statut = (
+        section_width
+        - col_tranche
+        - col_montant
+        - col_paye
+        - col_reste
+    )
+
+    table_width = section_width
+
+    row_h = 0.43 * cm
+
+    # ------------------------------------------------------------
+    # EN-TÊTE TABLEAU
+    # ------------------------------------------------------------
+
+    pdf.setFillColor(
+        gris_clair
+    )
+
+    pdf.setStrokeColor(
+        gris_bordure
+    )
+
+    pdf.roundRect(
+        table_x,
+        table_y - row_h,
+        table_width,
+        row_h,
+        3,
+        stroke=1,
+        fill=1
+    )
+
+    pdf.setFillColor(
+        bleu_fonce
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        6.3
+    )
+
+    x = table_x
+
+    pdf.drawString(
+        x + 0.12 * cm,
+        table_y - 0.28 * cm,
+        "TRANCHE"
+    )
+
+    x += col_tranche
+
+    pdf.drawString(
+        x + 0.12 * cm,
+        table_y - 0.28 * cm,
+        "MONTANT"
+    )
+
+    x += col_montant
+
+    pdf.drawString(
+        x + 0.12 * cm,
+        table_y - 0.28 * cm,
+        "PAYÉ"
+    )
+
+    x += col_paye
+
+    pdf.drawString(
+        x + 0.12 * cm,
+        table_y - 0.28 * cm,
+        "RESTE"
+    )
+
+    x += col_reste
+
+    pdf.drawString(
+        x + 0.12 * cm,
+        table_y - 0.28 * cm,
+        "STATUT"
+    )
+
+    # ------------------------------------------------------------
+    # LIGNES DES TRANCHES
+    # ------------------------------------------------------------
+
+    current_y = (
+        table_y
+        - row_h
+    )
+
+    # Maximum de 2 lignes pour conserver
+    # la fiche sur une seule page A4.
+    echeances_a_afficher = (
+        echeances_inscription[:2]
+    )
+
+    for echeance in echeances_a_afficher:
+
+        current_y -= row_h
+
+        pdf.setFillColor(
+            blanc
+        )
+
+        pdf.setStrokeColor(
+            gris_bordure
+        )
+
+        pdf.rect(
+            table_x,
+            current_y,
+            table_width,
+            row_h,
+            stroke=1,
+            fill=1
+        )
+
+        x = table_x
+
+        # TRANCHE
+
+        pdf.setFillColor(
+            noir
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.5
+        )
+
+        pdf.drawString(
+            x + 0.12 * cm,
+            current_y + 0.13 * cm,
+            echeance.get_type_tranche_display()
+        )
+
+        x += col_tranche
+
+        # MONTANT
+
+        pdf.setFont(
+            "Helvetica",
+            6.5
+        )
+
+        pdf.drawString(
+            x + 0.12 * cm,
+            current_y + 0.13 * cm,
+            f"{echeance.montant:,.0f} FCFA"
+        )
+
+        x += col_montant
+
+        # PAYÉ
+
+        pdf.setFillColor(
+            vert
+        )
+
+        pdf.drawString(
+            x + 0.12 * cm,
+            current_y + 0.13 * cm,
+            f"{echeance.montant_paye:,.0f} FCFA"
+        )
+
+        x += col_paye
+
+        # RESTE
+
+        pdf.setFillColor(
+            rouge
+            if echeance.reste_a_payer > 0
+            else vert
+        )
+
+        pdf.drawString(
+            x + 0.12 * cm,
+            current_y + 0.13 * cm,
+            f"{echeance.reste_a_payer:,.0f} FCFA"
+        )
+
+        x += col_reste
+
+        # STATUT
+
+        statut_echeance = (
+            echeance.statut
+        )
+
+        statut_labels_echeance = {
+            "PAYEE": "PAYÉE",
+            "PARTIELLE": "PARTIELLE",
+            "NON_PAYEE": "NON PAYÉE",
+        }
+
+        statut_affiche = (
+            statut_labels_echeance.get(
+                statut_echeance,
+                statut_echeance
+            )
+        )
+
+        couleurs_statut_echeance = {
+            "PAYEE": vert,
+            "PARTIELLE": orange,
+            "NON_PAYEE": gris,
+        }
+
+        couleur_statut_echeance = (
+            couleurs_statut_echeance.get(
+                statut_echeance,
+                gris
+            )
+        )
+
+        pdf.setFillColor(
+            couleur_statut_echeance
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.2
+        )
+
+        pdf.drawString(
+            x + 0.12 * cm,
+            current_y + 0.13 * cm,
+            statut_affiche
+        )
+
+    # ------------------------------------------------------------
+    # AUCUNE ÉCHÉANCE
+    # ------------------------------------------------------------
+
+    if not echeances_inscription:
+
+        current_y -= row_h
+
+        pdf.setFillColor(
+            gris_clair
+        )
+
+        pdf.setStrokeColor(
+            gris_bordure
+        )
+
+        pdf.rect(
+            table_x,
+            current_y,
+            table_width,
+            row_h,
+            stroke=1,
+            fill=1
+        )
+
+        pdf.setFillColor(
+            gris
+        )
+
+        pdf.setFont(
+            "Helvetica-Oblique",
+            6.5
+        )
+
+        pdf.drawCentredString(
+            table_x + table_width / 2,
+            current_y + 0.13 * cm,
+            "Aucune échéance de paiement configurée"
+        )
+
+    # ------------------------------------------------------------
+    # SI PLUS DE 2 TRANCHES
+    # ------------------------------------------------------------
+
+    if len(echeances_inscription) > 2:
+
+        pdf.setFillColor(
+            gris
+        )
+
+        pdf.setFont(
+            "Helvetica-Oblique",
+            5.8
+        )
+
+        pdf.drawRightString(
+            table_x + table_width,
+            current_y - 0.25 * cm,
+            f"{len(echeances_inscription) - 2} autre(s) échéance(s) non affichée(s)"
+        )
+
+    # ============================================================
+    # SIGNATURES
+    # ============================================================
+
+    # La position des signatures est désormais calculée
+    # à partir du bas réel du tableau des tranches (current_y),
+    # avec une valeur plancher de sécurité, afin qu'elles ne
+    # chevauchent plus jamais le tableau, quel que soit le
+    # nombre d'échéances affichées.
+
+    signature_y_max = 3.75 * cm
+
+    signature_y_min = 2.35 * cm
+
+    signature_y = min(
+        signature_y_max,
+        current_y - 0.85 * cm
+    )
+
+    signature_y = max(
+        signature_y,
+        signature_y_min
+    )
+
+    # ------------------------------------------------------------
+    # LIGNE DE SÉPARATION
+    # ------------------------------------------------------------
+
+    pdf.setStrokeColor(
+        gris_bordure
+    )
+
+    pdf.setLineWidth(
+        0.6
+    )
+
+    pdf.line(
+        marge_gauche + 0.4 * cm,
+        signature_y + 0.5 * cm,
+        largeur - marge_droite - 0.4 * cm,
+        signature_y + 0.5 * cm
+    )
+
+    # ------------------------------------------------------------
+    # TEXTES SIGNATURES
+    # ------------------------------------------------------------
+
+    pdf.setFillColor(
+        bleu_fonce
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        9
+    )
+
+    pdf.drawString(
+        marge_gauche + 0.5 * cm,
+        signature_y,
+        "Signature de l'étudiant"
+    )
+
+    pdf.drawString(
+        largeur - marge_droite - 6.5 * cm,
+        signature_y,
+        "Visa de l'administration"
+    )
+
+    # ------------------------------------------------------------
+    # LIGNES DE SIGNATURE
+    # ------------------------------------------------------------
+
+    pdf.setDash(
+        2,
+        2
+    )
+
+    pdf.line(
+        marge_gauche + 0.5 * cm,
+        signature_y - 1.2 * cm,
+        marge_gauche + 6.5 * cm,
+        signature_y - 1.2 * cm
+    )
+
+    pdf.line(
+        largeur - marge_droite - 6.5 * cm,
+        signature_y - 1.2 * cm,
+        largeur - marge_droite - 0.5 * cm,
+        signature_y - 1.2 * cm
+    )
+
+    pdf.setDash()
+
+    # ============================================================
+    # PIED DE PAGE
+    # ============================================================
+
+    pdf.setStrokeColor(
+        gris_bordure
+    )
+
+    pdf.setLineWidth(
+        0.5
+    )
+
+    pdf.line(
+        marge_gauche + 0.4 * cm,
+        1.65 * cm,
+        largeur - marge_droite - 0.4 * cm,
+        1.65 * cm
+    )
+
+    pdf.setFillColor(
+        gris
+    )
+
+    pdf.setFont(
+        "Helvetica",
+        7
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        1.35 * cm,
+        "Document généré par le système de gestion des inscriptions"
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        1.0 * cm,
+        "Université Internationale de Cocody"
+    )
+
+    # ============================================================
+    # FINALISATION
+    # ============================================================
+
+    pdf.showPage()
+
+    pdf.save()
+
+    buffer.seek(0)
+
+    return FileResponse(
+        buffer,
+        as_attachment=False,
+        filename=(
+            f"fiche_inscription_"
+            f"{inscription.numero}.pdf"
+        ),
+        content_type="application/pdf",
+    )
+from django.contrib.auth.decorators import login_required
+
+@login_required
+@transaction.atomic
+def preinscription_valider(request, pk):
+
+    preinscription = get_object_or_404(
+        Preinscription.objects.select_related(
+            "candidat",
+            "annee_academique",
+            "filiere",
+            "niveau",
+        ),
+        pk=pk,
+    )
+
+    # ==========================================
+    # VÉRIFICATION DU STATUT
+    # ==========================================
+
+    if preinscription.statut == "VALIDEE":
+
+        messages.warning(
+            request,
+            "Cette préinscription est déjà validée."
+        )
+
+        return redirect(
+            "gestion:preinscription_detail",
+            pk=preinscription.pk
+        )
+
+    if preinscription.statut == "REJETEE":
+
+        messages.error(
+            request,
+            "Impossible de valider une préinscription rejetée."
+        )
+
+        return redirect(
+            "gestion:preinscription_detail",
+            pk=preinscription.pk
+        )
+
+    # ==========================================
+    # CRÉATION OU RÉCUPÉRATION DE L'ÉTUDIANT
+    # ==========================================
+
+    etudiant, created = Etudiant.objects.get_or_create(
+        candidat=preinscription.candidat,
+        defaults={
+            "actif": True,
+        }
+    )
+
+    # ==========================================
+    # SI L'ÉTUDIANT EXISTE DÉJÀ
+    # ==========================================
+
+    if not created:
+
+        etudiant.actif = True
+        etudiant.save(update_fields=["actif"])
+
+    # ==========================================
+    # VALIDATION DE LA PRÉINSCRIPTION
+    # ==========================================
+
+    preinscription.statut = "VALIDEE"
+    preinscription.date_traitement = timezone.now()
+    preinscription.save(
+        update_fields=[
+            "statut",
+            "date_traitement",
+        ]
+    )
+
+    # ==========================================
+    # MESSAGE
+    # ==========================================
+
+    if created:
+
+        messages.success(
+            request,
+            f"La préinscription {preinscription.numero} "
+            f"a été validée. "
+            f"L'étudiant {etudiant.matricule} "
+            f"a été créé avec succès."
+        )
+
+    else:
+
+        messages.success(
+            request,
+            f"La préinscription {preinscription.numero} "
+            f"a été validée. "
+            f"L'étudiant {etudiant.matricule} "
+            f"a été réactivé."
+        )
+
+    return redirect(
+        "gestion:preinscription_detail",
+        pk=preinscription.pk
+    )
+
+@login_required
+@transaction.atomic
+def preinscription_activer_etudiant(request, pk):
+
+    if request.method != "POST":
+        return redirect(
+            "gestion:preinscription_detail",
+            pk=pk
+        )
+
+    preinscription = get_object_or_404(
+        Preinscription.objects.select_related(
+            "candidat",
+            "annee_academique",
+            "filiere",
+            "niveau",
+        ),
+        pk=pk,
+    )
+
+    # ==============================
+    # VÉRIFICATION DU STATUT
+    # ==============================
+
+    if preinscription.statut != "VALIDEE":
+
+        messages.error(
+            request,
+            "Cette préinscription doit être validée avant "
+            "de pouvoir activer l'étudiant."
+        )
+
+        return redirect(
+            "gestion:preinscription_detail",
+            pk=preinscription.pk
+        )
+
+    # ==============================
+    # RECHERCHE / CRÉATION ÉTUDIANT
+    # ==============================
+
+    etudiant, created = Etudiant.objects.get_or_create(
+        candidat=preinscription.candidat,
+        defaults={
+            "actif": True,
+        }
+    )
+
+    # ==============================
+    # CAS : ÉTUDIANT EXISTANT
+    # ==============================
+
+    if not created:
+
+        if etudiant.actif:
+
+            messages.info(
+                request,
+                f"L'étudiant {etudiant.matricule} est déjà actif."
+            )
+
+        else:
+
+            etudiant.actif = True
+            etudiant.save(
+                update_fields=["actif"]
+            )
+
+            messages.success(
+                request,
+                f"L'étudiant {etudiant.matricule} "
+                f"a été réactivé avec succès."
+            )
+
+    # ==============================
+    # CAS : NOUVEL ÉTUDIANT
+    # ==============================
+
+    else:
+
+        messages.success(
+            request,
+            f"L'étudiant {etudiant.matricule} "
+            f"a été créé et activé avec succès."
+        )
+
+    return redirect(
+        "gestion:preinscription_detail",
+        pk=preinscription.pk
+    )
+    
+@login_required
+def recu_pdfAAAAAA(request, pk):
 
     # ============================================================
     # IMPORTS
@@ -2059,449 +4649,1226 @@ Référence : {paiement.reference}
     return response
 
 @login_required
-def fiche_inscription_pdf(request, pk):
+def recu_pdf(request, pk):
 
     # ============================================================
     # IMPORTS
     # ============================================================
 
     import io
-    import os
-    from datetime import datetime
+    import qrcode
 
+    from pathlib import Path
+    from decimal import Decimal
+
+    from django.conf import settings
+    from django.db.models import Sum
+    from django.http import HttpResponse
     from django.shortcuts import get_object_or_404
-    from django.http import FileResponse
 
     from reportlab.pdfgen import canvas
+    from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
-    from reportlab.lib import colors
     from reportlab.lib.utils import ImageReader
 
     # ============================================================
-    # RÉCUPÉRATION DE L'INSCRIPTION
+    # RÉCUPÉRATION DU REÇU
     # ============================================================
 
-    inscription = get_object_or_404(
-        Inscription.objects.select_related(
-            "etudiant",
-            "etudiant__candidat",
-            "annee_academique",
-            "filiere",
-            "niveau",
-            "classe",
+    recu = get_object_or_404(
+        Recu.objects.select_related(
+            "paiement",
+            "paiement__scolarite__inscription__etudiant__candidat",
+            "paiement__scolarite__inscription__annee_academique",
+            "paiement__scolarite__inscription__filiere",
+            "paiement__scolarite__inscription__niveau",
+            "paiement__scolarite__inscription__classe",
+            "paiement__echeance",
         ),
         pk=pk,
     )
 
-    candidat = inscription.etudiant.candidat
+    paiement = recu.paiement
+    scolarite = paiement.scolarite
+    inscription = scolarite.inscription
+    etudiant = inscription.etudiant
+    candidat = etudiant.candidat
 
     # ============================================================
-    # PDF
+    # INFORMATIONS ÉTUDIANT
+    # ============================================================
+
+    nom_complet = f"{candidat.nom} {candidat.prenoms}".upper()
+    annee_academique = inscription.annee_academique.libelle
+    matricule = etudiant.matricule
+    filiere = inscription.filiere.nom
+    classe = inscription.classe.nom
+    niveau = inscription.niveau.nom
+
+    # ============================================================
+    # MONTANTS
+    # ============================================================
+
+    montant_total = Decimal(scolarite.montant_total or 0)
+    remise = Decimal(scolarite.remise or 0)
+    scolarite_nette = Decimal(scolarite.montant_net or 0)
+
+    total_paye = Decimal(
+        scolarite.paiements.filter(
+            statut="VALIDE"
+        ).aggregate(
+            total=Sum("montant")
+        )["total"] or 0
+    )
+
+    reste_a_payer = max(
+        Decimal("0.00"),
+        scolarite_nette - total_paye
+    )
+
+    montant = Decimal(paiement.montant or 0)
+    montant_lettres = nombre_en_lettres(montant)
+
+    # ============================================================
+    # FORMATAGE DES MONTANTS
+    # ============================================================
+
+    def montant_fmt(valeur):
+        texte = f"{valeur:,.2f}"
+        texte = texte.replace(",", " ").replace(".", ",")
+        return f"{texte} FCFA"
+
+    # ============================================================
+    # DÉSIGNATION DU PAIEMENT
+    # ============================================================
+
+    designation = "Versement"
+
+    if paiement.echeance:
+        designation = paiement.echeance.libelle or "Versement"
+
+    designation_lower = designation.lower()
+
+    droit_inscription = Decimal("0.00")
+    versement = Decimal("0.00")
+    autres = Decimal("0.00")
+
+    if (
+        "droit" in designation_lower
+        or "inscription" in designation_lower
+    ):
+        droit_inscription = montant
+
+    elif (
+        "autre" in designation_lower
+        or "divers" in designation_lower
+    ):
+        autres = montant
+
+    else:
+        versement = montant
+
+    mode = paiement.mode_paiement
+
+    # ============================================================
+    # PAGE A4
     # ============================================================
 
     buffer = io.BytesIO()
 
     largeur, hauteur = A4
 
-    marge_gauche = 1.5 * cm
-    marge_droite = 1.5 * cm
-    marge_haut = 1.2 * cm
-    marge_bas = 1.2 * cm
+    demi_hauteur = hauteur / 2
 
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-    pdf.setTitle(f"Fiche d'inscription - {inscription.numero}")
+    pdf = canvas.Canvas(
+        buffer,
+        pagesize=A4
+    )
+
+    pdf.setTitle(
+        f"Reçu {recu.numero}"
+    )
+
+    # ============================================================
+    # DIMENSIONS D'UN REÇU
+    #
+    # A5 PAYSAGE
+    #
+    # largeur  = 21 cm
+    # hauteur  = 14,85 cm
+    # ============================================================
+
+    W = largeur
+    H = demi_hauteur
+
+    marge = 0.65 * cm
 
     # ============================================================
     # COULEURS
     # ============================================================
 
-    bleu = colors.HexColor("#0d6efd")
-    bleu_fonce = colors.HexColor("#12355B")
-    gris = colors.HexColor("#6c757d")
-    gris_clair = colors.HexColor("#f5f7fa")
-    gris_bordure = colors.HexColor("#d9dee5")
-    noir = colors.HexColor("#212529")
-    blanc = colors.white
+    bleu_uic = colors.HexColor("#243F73")
+    gris = colors.HexColor("#555555")
+    bleu_clair = colors.HexColor("#EAF0FA")
+    rouge_clair = colors.HexColor("#FBEAEC")
+    gris_bordure = colors.HexColor("#D0D4DA")
 
     # ============================================================
-    # CADRE GLOBAL
+    # NUMÉRO
     # ============================================================
 
-    pdf.setStrokeColor(gris_bordure)
-    pdf.setLineWidth(0.8)
-    pdf.roundRect(
-        marge_gauche,
-        marge_bas,
-        largeur - marge_gauche - marge_droite,
-        hauteur - marge_haut - marge_bas,
-        8,
-        stroke=1,
-        fill=0,
+    numero_affichage = str(recu.numero)
+
+    if "-" in numero_affichage:
+        numero_affichage = numero_affichage.split("-")[-1]
+
+    numero_affichage = numero_affichage.zfill(6)
+
+    # ============================================================
+    # QR CODE
+    # ============================================================
+
+    qr_data = f"""
+UNIVERSITÉ INTERNATIONALE DE COCODY
+================================
+
+REÇU N° : {numero_affichage}
+Date : {recu.date_emission.strftime("%d/%m/%Y")}
+
+Étudiant : {nom_complet}
+Matricule : {matricule}
+
+Filière : {filiere}
+Niveau : {niveau}
+Classe : {classe}
+
+Année académique : {annee_academique}
+
+================================
+
+Montant total : {montant_fmt(montant_total)}
+Remise : {montant_fmt(remise)}
+Scolarité nette : {montant_fmt(scolarite_nette)}
+
+Total payé : {montant_fmt(total_paye)}
+Reste à payer : {montant_fmt(reste_a_payer)}
+
+================================
+
+Paiement de ce reçu : {montant_fmt(montant)}
+Montant en lettres : {montant_lettres} FCFA
+
+Mode : {paiement.get_mode_paiement_display()}
+Référence : {paiement.reference}
+""".strip()
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=8,
+        border=2,
+    )
+
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+
+    qr_image = qr.make_image(
+        fill_color="black",
+        back_color="white"
+    )
+
+    qr_buffer = io.BytesIO()
+
+    qr_image.save(
+        qr_buffer,
+        format="PNG"
+    )
+
+    qr_buffer.seek(0)
+
+    qr_reader = ImageReader(qr_buffer)
+
+    # ============================================================
+    # LOGO
+    # ============================================================
+
+    logo = (
+        Path(settings.BASE_DIR)
+        / "gestion"
+        / "static"
+        / "gestion"
+        / "images"
+        / "logo.jpeg"
     )
 
     # ============================================================
-    # EN-TÊTE (fond blanc, logo à gauche)
+    # LIGNE POINTILLÉE
     # ============================================================
 
-    entete_h = 2.6 * cm
-    entete_y = hauteur - marge_haut - entete_h  # bas de la zone d'en-tête
+    def ligne_pointillee(
+        x1,
+        x2,
+        y,
+        couleur=gris,
+        epaisseur=0.5,
+        dash=(1, 2)
+    ):
+        pdf.setStrokeColor(couleur)
+        pdf.setLineWidth(epaisseur)
+        pdf.setDash(*dash)
+        pdf.line(x1, y, x2, y)
+        pdf.setDash()
 
-    # -- Logo (à gauche) --
-    logo_taille = 2.0 * cm
-    logo_x = marge_gauche + 0.4 * cm
-    logo_y = entete_y + (entete_h - logo_taille) / 2
+    # ============================================================
+    # DESSIN DU REÇU A5
+    # ============================================================
 
-    from django.conf import settings
-    from django.contrib.staticfiles import finders
+    def dessiner_recu(y_offset):
 
-    # cherche d'abord via les staticfiles Django (fonctionne quel que soit
-    # l'environnement), puis en repli le chemin relatif au projet
-    LOGO_PATH = finders.find("gestion/images/logo.jpeg")
-    if not LOGO_PATH:
-        LOGO_PATH = os.path.join(settings.BASE_DIR, "gestion", "static", "gestion", "images", "logo.jpeg")
+        # ========================================================
+        # CADRE
+        # ========================================================
 
-    logo_affiche = False
-    if os.path.exists(LOGO_PATH):
-        try:
+        # pdf.setStrokeColor(bleu_uic)
+        # pdf.setLineWidth(1)
+
+        # pdf.rect(
+        #     marge,
+        #     y_offset + marge,
+        #     W - 2 * marge,
+        #     H - 2 * marge,
+        #     stroke=1,
+        #     fill=0
+        # )
+
+        # ========================================================
+        # LOGO
+        # ========================================================
+
+        if logo.exists():
+
             pdf.drawImage(
-                ImageReader(LOGO_PATH),
-                logo_x, logo_y,
-                width=logo_taille, height=logo_taille,
+                str(logo),
+                0.95 * cm,
+                y_offset + H - 2.15 * cm,
+                width=2.65 * cm,
+                height=1.45 * cm,
                 preserveAspectRatio=True,
-                anchor="c",
                 mask="auto",
             )
-            logo_affiche = True
-        except Exception:
-            logo_affiche = False
 
-    if not logo_affiche:
-        pdf.setFillColor(gris_clair)
-        pdf.setStrokeColor(gris_bordure)
+        # ========================================================
+        # TITRE
+        # ========================================================
+
+        pdf.setFillColor(bleu_uic)
+        pdf.setFont(
+            "Helvetica-Bold",
+            15
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_offset + H - 0.95 * cm,
+            "REÇU"
+        )
+
+        # Ligne sous le titre
+
+        pdf.setStrokeColor(bleu_uic)
         pdf.setLineWidth(0.8)
-        pdf.roundRect(logo_x, logo_y, logo_taille, logo_taille, 4, stroke=1, fill=1)
-        pdf.setFillColor(gris)
-        pdf.setFont("Helvetica-Bold", 7)
-        pdf.drawCentredString(logo_x + logo_taille / 2, logo_y + logo_taille / 2 - 0.1 * cm, "LOGO")
 
-    # -- Texte de l'en-tête (centré sur la page) --
-    cursor = hauteur - marge_haut - 0.75 * cm
+        pdf.line(
+            8.3 * cm,
+            y_offset + H - 1.10 * cm,
+            12.7 * cm,
+            y_offset + H - 1.10 * cm
+        )
 
-    pdf.setFillColor(bleu_fonce)
-    pdf.setFont("Helvetica-Bold", 15)
-    pdf.drawCentredString(largeur / 2, cursor, "UNIVERSITÉ INTERNATIONALE DE COCODY")
+        # ========================================================
+        # NUMÉRO
+        # ========================================================
 
-    cursor -= 0.5 * cm
-    pdf.setFillColor(gris)
-    pdf.setFont("Helvetica", 8.5)
-    pdf.drawCentredString(largeur / 2, cursor, "Service des Inscriptions et de la Scolarité")
+        pdf.setFillColor(colors.black)
 
-    cursor -= 0.65 * cm
-    pdf.setFillColor(bleu)
-    pdf.setFont("Helvetica-Bold", 13)
-    pdf.drawCentredString(largeur / 2, cursor, "FICHE D'INSCRIPTION")
+        pdf.setFont(
+            "Helvetica-Bold",
+            7.5
+        )
 
-    # ============================================================
-    # LIGNE SOUS L'EN-TÊTE
-    # ============================================================
+        pdf.drawString(
+            12.85 * cm,
+            y_offset + H - 0.85 * cm,
+            "REÇU N°"
+        )
 
-    cursor = entete_y - 0.4 * cm
-    pdf.setStrokeColor(gris_bordure)
-    pdf.setLineWidth(0.8)
-    pdf.line(marge_gauche + 0.4 * cm, cursor, largeur - marge_droite - 0.4 * cm, cursor)
+        pdf.setFont(
+            "Helvetica-Bold",
+            8
+        )
 
-    cursor -= 0.5 * cm
+        pdf.drawString(
+            14.05 * cm,
+            y_offset + H - 0.85 * cm,
+            numero_affichage
+        )
 
-    # ============================================================
-    # RANGÉE INFOS RAPIDES : date d'édition (gauche) / N° inscription (droite)
-    # ============================================================
+        # ========================================================
+        # DATE
+        # ========================================================
 
-    ligne_h = 0.95 * cm
+        pdf.setFont(
+            "Helvetica",
+            7.5
+        )
 
-    # -- N° inscription (droite) — libellé et valeur empilés pour
-    #    ne jamais se chevaucher, quelle que soit la longueur du numéro --
-    box_w = 5.4 * cm
-    box_h = ligne_h
-    box_x = largeur - marge_droite - 0.4 * cm - box_w
-    box_y = cursor - box_h
+        pdf.drawString(
+            13.3 * cm,
+            y_offset + H - 1.40 * cm,
+            "Date :"
+        )
 
-    numero_texte = str(inscription.numero)
-    taille_numero = 10
-    # réduit automatiquement la taille si le numéro est très long
-    while pdf.stringWidth(numero_texte, "Helvetica-Bold", taille_numero) > box_w - 0.55 * cm and taille_numero > 7:
-        taille_numero -= 0.5
+        pdf.setFont(
+            "Helvetica-Bold",
+            7.5
+        )
 
-    pdf.setFillColor(gris_clair)
-    pdf.setStrokeColor(gris_bordure)
-    pdf.setLineWidth(0.8)
-    pdf.roundRect(box_x, box_y, box_w, box_h, 5, stroke=1, fill=1)
-    pdf.setFillColor(bleu)
-    pdf.rect(box_x, box_y, 0.15 * cm, box_h, stroke=0, fill=1)
+        pdf.drawString(
+            14.25 * cm,
+            y_offset + H - 1.40 * cm,
+            recu.date_emission.strftime("%d/%m/%Y")
+        )
 
-    pdf.setFillColor(gris)
-    pdf.setFont("Helvetica-Bold", 7)
-    pdf.drawString(box_x + 0.35 * cm, box_y + box_h - 0.34 * cm, "N° INSCRIPTION")
-    pdf.setFillColor(noir)
-    pdf.setFont("Helvetica-Bold", taille_numero)
-    pdf.drawString(box_x + 0.35 * cm, box_y + 0.28 * cm, numero_texte)
+        # ========================================================
+        # QR CODE
+        # ========================================================
 
-    # -- Date d'édition (gauche) --
-    date_edition = datetime.now().strftime("%d/%m/%Y à %H:%M")
-    edit_x = marge_gauche + 0.4 * cm
+        qr_size = 1.55 * cm
 
-    pdf.setFillColor(gris)
-    pdf.setFont("Helvetica", 8)
-    # pdf.drawString(edit_x, box_y + box_h / 2 - 0.12 * cm, f"Document édité le {date_edition}")
+        qr_x = W - marge - qr_size
 
-    # bas réel de cette rangée
-    cursor = box_y
+        qr_y = y_offset + H - 2.25 * cm
 
-    # ============================================================
-    # FONCTION CHAMP — renvoie le bas réel du champ
-    # ============================================================
-
-    def champ(label, valeur, x, y, largeur_champ=6.2 * cm, taille=9):
-        if valeur is None or valeur == "":
-            valeur = "Non renseigné"
-        valeur = str(valeur)
+        pdf.drawImage(
+            qr_reader,
+            qr_x,
+            qr_y,
+            width=qr_size,
+            height=qr_size,
+            preserveAspectRatio=True,
+            mask="auto",
+        )
 
         pdf.setFillColor(gris)
-        pdf.setFont("Helvetica-Bold", 6.8)
-        pdf.drawString(x, y, label.upper())
 
-        pdf.setFillColor(noir)
-        pdf.setFont("Helvetica", taille)
-        pdf.drawString(x, y - 0.38 * cm, valeur[:60])
+        pdf.setFont(
+            "Helvetica",
+            4.5
+        )
 
-        pdf.setStrokeColor(gris_bordure)
-        pdf.setLineWidth(0.4)
-        pdf.line(x, y - 0.52 * cm, x + largeur_champ, y - 0.52 * cm)
+        pdf.drawCentredString(
+            qr_x + qr_size / 2,
+            qr_y - 0.20 * cm,
+            "Scanner pour vérifier"
+        )
 
-        return y - 0.52 * cm
+        # ========================================================
+        # INFORMATIONS ÉTUDIANT
+        # ========================================================
 
-    # ============================================================
-    # CONSTANTES DE MISE EN PAGE
-    # ============================================================
+        y = y_offset + H - 2.55 * cm
 
-    TITLE_TO_FIELDS = 0.75 * cm
-    ROW_H_1COL = 1.0 * cm
-    ROW_H_2COL = 1.05 * cm
-    SECTION_GAP = 0.65 * cm
+        pdf.setFillColor(colors.black)
 
-    def titre_section(x, y, numero, texte, largeur_ligne):
-        # petit badge numéroté pour un rendu plus soigné
-        rayon = 0.32 * cm
-        pdf.setFillColor(bleu)
-        pdf.circle(x + rayon, y + 0.12 * cm, rayon, stroke=0, fill=1)
-        pdf.setFillColor(blanc)
-        pdf.setFont("Helvetica-Bold", 8.5)
-        pdf.drawCentredString(x + rayon, y - 0.06 * cm, str(numero))
+        # --------------------------------------------------------
+        # NOM
+        # --------------------------------------------------------
 
-        pdf.setFillColor(bleu_fonce)
-        pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(x + 2 * rayon + 0.25 * cm, y, texte)
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
 
-        pdf.setStrokeColor(bleu)
-        pdf.setLineWidth(0.8)
-        pdf.line(x, y - 0.28 * cm, x + largeur_ligne, y - 0.28 * cm)
+        pdf.drawString(
+            0.95 * cm,
+            y,
+            "Nom & Prénoms :"
+        )
 
-    # ============================================================
-    # ZONE DE CONTENU : la photo démarre désormais à la même hauteur
-    # que le titre de la section 1, nettement sous la rangée du
-    # numéro d'inscription — plus aucun chevauchement possible.
-    # ============================================================
+        ligne_pointillee(
+            4.55 * cm,
+            W - marge,
+            y - 0.03 * cm
+        )
 
-    cursor -= SECTION_GAP
-    content_top = cursor
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
 
-    section_x = marge_gauche + 0.4 * cm
-    section_width = largeur - marge_gauche - marge_droite - 0.8 * cm
+        pdf.drawString(
+            4.65 * cm,
+            y,
+            nom_complet[:55]
+        )
 
-    # ============================================================
-    # PHOTO
-    # ============================================================
+        # --------------------------------------------------------
+        # ANNÉE + MATRICULE
+        # --------------------------------------------------------
 
-    photo_w = 3.2 * cm
-    photo_h = 3.8 * cm
-    photo_x = largeur - marge_droite - photo_w - 0.2 * cm
-    # le haut de la photo démarre sous la ligne de séparation du titre de
-    # section (tracée à content_top - 0.28cm), avec une marge de sécurité
-    photo_y = content_top - 0.55 * cm - photo_h
+        y -= 0.52 * cm
 
-    pdf.setStrokeColor(gris_bordure)
-    pdf.setLineWidth(0.8)
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
 
-    photo_affichee = False
-    if getattr(candidat, "photo", None):
-        try:
-            photo_path = candidat.photo.path
-            if os.path.exists(photo_path):
-                pdf.drawImage(
-                    ImageReader(photo_path),
-                    photo_x, photo_y,
-                    width=photo_w, height=photo_h,
-                    preserveAspectRatio=True,
-                    anchor="c",
-                    mask="auto",
+        pdf.drawString(
+            0.95 * cm,
+            y,
+            "Année académique :"
+        )
+
+        ligne_pointillee(
+            4.55 * cm,
+            11.1 * cm,
+            y - 0.03 * cm
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            7
+        )
+
+        pdf.drawString(
+            4.65 * cm,
+            y,
+            str(annee_academique)
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawString(
+            11.35 * cm,
+            y,
+            "Matricule :"
+        )
+
+        ligne_pointillee(
+            14.0 * cm,
+            W - marge,
+            y - 0.03 * cm
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawString(
+            14.05 * cm,
+            y,
+            str(matricule)
+        )
+
+        # --------------------------------------------------------
+        # FILIÈRE + CARNET
+        # --------------------------------------------------------
+
+        y -= 0.52 * cm
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawString(
+            0.95 * cm,
+            y,
+            "Filière :"
+        )
+
+        ligne_pointillee(
+            2.55 * cm,
+            14.0 * cm,
+            y - 0.03 * cm
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawString(
+            2.65 * cm,
+            y,
+            str(filiere).upper()[:55]
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            7
+        )
+
+        pdf.drawString(
+            14.15 * cm,
+            y,
+            "N° Carnet :"
+        )
+
+        ligne_pointillee(
+            16.65 * cm,
+            W - marge,
+            y - 0.03 * cm
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            7
+        )
+
+        pdf.drawString(
+            16.75 * cm,
+            y,
+            "—"
+        )
+
+        # ========================================================
+        # TABLEAU
+        # ========================================================
+
+        table_x = 0.95 * cm
+
+        table_top = y - 0.42 * cm
+
+        table_width = W - 1.90 * cm
+
+        col1 = 10.1 * cm
+
+        col2 = table_width - col1
+
+        header_height = 0.46 * cm
+
+        row_height = 0.43 * cm
+
+        lignes = [
+            ("Montant total", montant_total),
+            ("Remise", remise),
+            ("Scolarité nette", scolarite_nette),
+            ("Droit d'inscription", droit_inscription),
+            ("Versement", versement),
+            ("Autres : divers, etc...", autres),
+            ("TOTAL PAYÉ", total_paye),
+            ("RESTE À PAYER", reste_a_payer),
+        ]
+
+        total_height = (
+            header_height
+            + len(lignes) * row_height
+        )
+
+        table_bottom = table_top - total_height
+
+        # --------------------------------------------------------
+        # FOND
+        # --------------------------------------------------------
+
+        pdf.setFillColor(colors.white)
+
+        pdf.setStrokeColor(bleu_uic)
+
+        pdf.setLineWidth(0.7)
+
+        pdf.rect(
+            table_x,
+            table_bottom,
+            table_width,
+            total_height,
+            stroke=1,
+            fill=1
+        )
+
+        # --------------------------------------------------------
+        # EN-TÊTE
+        # --------------------------------------------------------
+
+        pdf.setFillColor(bleu_uic)
+
+        pdf.rect(
+            table_x,
+            table_top - header_height,
+            table_width,
+            header_height,
+            stroke=0,
+            fill=1
+        )
+
+        pdf.setFillColor(colors.white)
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            table_x + 0.20 * cm,
+            table_top - 0.30 * cm,
+            "DÉSIGNATION"
+        )
+
+        pdf.drawRightString(
+            table_x + table_width - 0.20 * cm,
+            table_top - 0.30 * cm,
+            "MONTANT"
+        )
+
+        # --------------------------------------------------------
+        # LIGNES
+        # --------------------------------------------------------
+
+        current_top = table_top - header_height
+
+        for libelle, valeur in lignes:
+
+            row_bottom = current_top - row_height
+
+            if libelle == "TOTAL PAYÉ":
+
+                pdf.setFillColor(
+                    bleu_clair
                 )
-                pdf.rect(photo_x, photo_y, photo_w, photo_h, fill=0, stroke=1)
-                photo_affichee = True
-        except Exception:
-            photo_affichee = False
 
-    if not photo_affichee:
-        pdf.setFillColor(gris_clair)
-        pdf.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
-        pdf.setFillColor(gris)
-        pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2, "PHOTO")
+                pdf.rect(
+                    table_x,
+                    row_bottom,
+                    table_width,
+                    row_height,
+                    stroke=0,
+                    fill=1
+                )
+
+            elif libelle == "RESTE À PAYER":
+
+                pdf.setFillColor(
+                    rouge_clair
+                )
+
+                pdf.rect(
+                    table_x,
+                    row_bottom,
+                    table_width,
+                    row_height,
+                    stroke=0,
+                    fill=1
+                )
+
+            # ligne horizontale
+
+            pdf.setStrokeColor(
+                gris_bordure
+            )
+
+            pdf.setLineWidth(0.4)
+
+            pdf.line(
+                table_x,
+                row_bottom,
+                table_x + table_width,
+                row_bottom
+            )
+
+            # séparation verticale
+
+            pdf.line(
+                table_x + col1,
+                row_bottom,
+                table_x + col1,
+                current_top
+            )
+
+            # police
+
+            if libelle in (
+                "TOTAL PAYÉ",
+                "RESTE À PAYER"
+            ):
+
+                pdf.setFont(
+                    "Helvetica-Bold",
+                    6.8
+                )
+
+            elif libelle == "Remise":
+
+                pdf.setFont(
+                    "Helvetica-Bold",
+                    6.5
+                )
+
+            else:
+
+                pdf.setFont(
+                    "Helvetica",
+                    6.5
+                )
+
+            pdf.setFillColor(
+                colors.black
+            )
+
+            pdf.drawString(
+                table_x + 0.20 * cm,
+                row_bottom + 0.135 * cm,
+                libelle
+            )
+
+            pdf.drawRightString(
+                table_x + table_width - 0.20 * cm,
+                row_bottom + 0.135 * cm,
+                montant_fmt(valeur)
+            )
+
+            current_top = row_bottom
+
+        # ========================================================
+        # MONTANT EN LETTRES
+        # ========================================================
+
+        y_montant = table_bottom - 0.48 * cm
+
+        pdf.setFillColor(colors.black)
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            0.95 * cm,
+            y_montant,
+            "Montant du présent paiement :"
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            6.8
+        )
+
+        pdf.drawString(
+            6.0 * cm,
+            y_montant,
+            f"{montant_lettres} FCFA"[:100]
+        )
+
+        # ========================================================
+        # MODE DE PAIEMENT
+        # ========================================================
+
+        y_mode = y_montant - 0.48 * cm
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            0.95 * cm,
+            y_mode,
+            "Mode de paiement :"
+        )
+
+        modes = [
+            ("ESPECES", "Espèces"),
+            ("CHEQUE", "Chèque"),
+            ("VIREMENT", "Virement"),
+            ("MOBILE_MONEY", "Mobile Money"),
+            ("CARTE", "Carte bancaire"),
+            ("AUTRE", "Autre"),
+        ]
+
+        x_mode = 4.65 * cm
+
+        for code, libelle in modes:
+
+            pdf.setStrokeColor(gris)
+
+            pdf.setLineWidth(0.5)
+
+            pdf.setFillColor(
+                bleu_uic
+                if mode == code
+                else colors.white
+            )
+
+            pdf.rect(
+                x_mode,
+                y_mode - 0.055 * cm,
+                0.24 * cm,
+                0.24 * cm,
+                stroke=1,
+                fill=1
+            )
+
+            if mode == code:
+
+                pdf.setFillColor(
+                    colors.white
+                )
+
+                pdf.setFont(
+                    "Helvetica-Bold",
+                    5.5
+                )
+
+                pdf.drawString(
+                    x_mode + 0.035 * cm,
+                    y_mode - 0.005 * cm,
+                    "✓"
+                )
+
+            pdf.setFillColor(
+                colors.black
+            )
+
+            pdf.setFont(
+                "Helvetica",
+                6.2
+            )
+
+            pdf.drawString(
+                x_mode + 0.31 * cm,
+                y_mode,
+                libelle
+            )
+
+            x_mode += 2.55 * cm
+
+        # ========================================================
+        # RÉFÉRENCE
+        # ========================================================
+
+        y_reference = y_mode - 0.48 * cm
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            0.95 * cm,
+            y_reference,
+            "Référence paiement :"
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            4.75 * cm,
+            y_reference,
+            str(paiement.reference)
+        )
+
+        # ========================================================
+        # NIVEAU / CLASSE
+        # ========================================================
+
+        y_classe = y_reference - 0.48 * cm
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            0.95 * cm,
+            y_classe,
+            "Niveau :"
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            6.8
+        )
+
+        pdf.drawString(
+            2.15 * cm,
+            y_classe,
+            str(niveau)
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawString(
+            8.4 * cm,
+            y_classe,
+            "Classe :"
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            6.8
+        )
+
+        pdf.drawString(
+            9.7 * cm,
+            y_classe,
+            str(classe)
+        )
+
+        # ========================================================
+        # SIGNATURES
+        # ========================================================
+
+        y_signature = y_classe - 0.85 * cm
+
+        pdf.setFillColor(
+            colors.black
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            6.8
+        )
+
+        pdf.drawCentredString(
+            5 * cm,
+            y_signature,
+            "L'ÉTUDIANT"
+        )
+
+        pdf.drawCentredString(
+            16 * cm,
+            y_signature,
+            "LA CAISSE"
+        )
+
+        # --------------------------------------------------------
+        # LIGNES SIGNATURE
+        # --------------------------------------------------------
+
+        ligne_signature_y = (
+            y_signature - 0.55 * cm
+        )
+
+        pdf.setStrokeColor(
+            colors.HexColor("#999999")
+        )
+
+        pdf.setLineWidth(0.5)
+
+        pdf.line(
+            2.2 * cm,
+            ligne_signature_y,
+            7.8 * cm,
+            ligne_signature_y
+        )
+
+        pdf.line(
+            13.2 * cm,
+            ligne_signature_y,
+            18.8 * cm,
+            ligne_signature_y
+        )
+
+        # ========================================================
+        # CACHET
+        # ========================================================
+
+        cachet_rayon = 0.65 * cm
+
+        cachet_cx = 16 * cm
+
+        cachet_cy = (
+            ligne_signature_y
+            + 0.15 * cm
+            + cachet_rayon
+        )
+
+        pdf.setStrokeColor(
+            gris_bordure
+        )
+
+        pdf.setLineWidth(0.5)
+
+        pdf.setDash(
+            2,
+            2
+        )
+
+        pdf.circle(
+            cachet_cx,
+            cachet_cy,
+            cachet_rayon,
+            stroke=1,
+            fill=0
+        )
+
+        pdf.setDash()
+
+        pdf.setFillColor(
+            gris
+        )
+
+        pdf.setFont(
+            "Helvetica-Oblique",
+            5
+        )
+
+        pdf.drawCentredString(
+            cachet_cx,
+            cachet_cy - 0.08 * cm,
+            "Cachet"
+        )
+
+        # ========================================================
+        # NOTE
+        # ========================================================
+
+        y_note = (
+            ligne_signature_y
+            - 0.72 * cm
+        )
+
+        pdf.setFillColor(
+            gris
+        )
+
+        pdf.setFont(
+            "Helvetica-Oblique",
+            5.5
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_note,
+            "Ce reçu constitue une preuve de paiement."
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_note - 0.23 * cm,
+            "Veuillez conserver ce document."
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_note - 0.46 * cm,
+            "En cas d'erreur, contactez le service de la scolarité sous 48h."
+        )
+
+        # ========================================================
+        # PIED DE PAGE
+        # ========================================================
+
+        pdf.setStrokeColor(
+            gris_bordure
+        )
+
+        pdf.setLineWidth(0.4)
+
+        pdf.line(
+            1.05 * cm,
+            y_offset + 0.85 * cm,
+            W - 1.05 * cm,
+            y_offset + 0.85 * cm
+        )
+
+        pdf.setFillColor(
+            bleu_uic
+        )
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            5.5
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_offset + 0.58 * cm,
+            "UNIVERSITÉ INTERNATIONALE DE COCODY"
+        )
+
+        pdf.setFillColor(
+            gris
+        )
+
+        pdf.setFont(
+            "Helvetica",
+            4.8
+        )
+
+        pdf.drawCentredString(
+            W / 2,
+            y_offset + 0.35 * cm,
+            "Document généré automatiquement par le système de gestion."
+        )
 
     # ============================================================
-    # 1. IDENTIFICATION
+    # PREMIER REÇU
     # ============================================================
 
-    titre_section(section_x, content_top, 1, "IDENTIFICATION DE L'ÉTUDIANT", section_width)
-
-    info_x = section_x
-    info_y = content_top - TITLE_TO_FIELDS
-    largeur_info = 6.3 * cm
-
-    bas1 = champ("Matricule", inscription.etudiant.matricule, info_x, info_y, largeur_info)
-    bas2 = champ("Nom", candidat.nom, info_x, info_y - ROW_H_1COL, largeur_info)
-    bas3 = champ("Prénoms", candidat.prenoms, info_x, info_y - 2 * ROW_H_1COL, largeur_info)
-    bas4 = champ("Sexe", getattr(candidat, "sexe", None), info_x, info_y - 3 * ROW_H_1COL, largeur_info)
-
-    fin_section1 = min(bas4, photo_y)
-
-    # ============================================================
-    # 2. INFORMATIONS PERSONNELLES
-    # ============================================================
-
-    section_y = fin_section1 - SECTION_GAP
-    titre_section(section_x, section_y, 2, "INFORMATIONS PERSONNELLES", section_width)
-
-    col1 = section_x
-    col2 = section_x + 8.3 * cm
-    info_y = section_y - TITLE_TO_FIELDS
-
-    date_naissance = getattr(candidat, "date_naissance", None)
-    if date_naissance:
-        date_naissance = date_naissance.strftime("%d/%m/%Y")
-
-    champ("Date de naissance", date_naissance, col1, info_y, 6.5 * cm)
-    champ("Lieu de naissance", getattr(candidat, "lieu_naissance", None), col2, info_y, 6.5 * cm)
-
-    champ("Nationalité", getattr(candidat, "nationalite", None), col1, info_y - ROW_H_2COL, 6.5 * cm)
-    champ("Téléphone", getattr(candidat, "telephone", None), col2, info_y - ROW_H_2COL, 6.5 * cm)
-
-    champ("Email", getattr(candidat, "email", None), col1, info_y - 2 * ROW_H_2COL, 6.5 * cm, taille=8.5)
-    champ("Ville", getattr(candidat, "ville", None), col2, info_y - 2 * ROW_H_2COL, 6.5 * cm)
-
-    bas_adresse = champ(
-        "Adresse", getattr(candidat, "adresse", None),
-        col1, info_y - 3 * ROW_H_2COL, 13.0 * cm, taille=8.5,
+    dessiner_recu(
+        demi_hauteur
     )
 
     # ============================================================
-    # 3. INFORMATIONS ACADÉMIQUES
+    # DEUXIÈME REÇU
     # ============================================================
 
-    section_y = bas_adresse - SECTION_GAP
-    titre_section(section_x, section_y, 3, "INFORMATIONS ACADÉMIQUES", section_width)
-
-    info_y = section_y - TITLE_TO_FIELDS
-
-    champ("Année académique", getattr(inscription.annee_academique, "libelle", None), col1, info_y, 6.5 * cm)
-    champ("Filière", getattr(inscription.filiere, "nom", None), col2, info_y, 6.5 * cm, taille=8.5)
-
-    champ("Code filière", getattr(inscription.filiere, "code", None), col1, info_y - ROW_H_2COL, 6.5 * cm)
-    champ("Niveau", getattr(inscription.niveau, "nom", None), col2, info_y - ROW_H_2COL, 6.5 * cm)
-
-    champ("Classe", getattr(inscription.classe, "nom", None), col1, info_y - 2 * ROW_H_2COL, 6.5 * cm)
-
-    type_inscription = getattr(inscription, "type_inscription", "")
-    if type_inscription == "PREMIERE_INSCRIPTION":
-        type_label = "Première inscription"
-    elif type_inscription:
-        type_label = "Réinscription"
-    else:
-        type_label = "Non renseigné"
-
-    statut = getattr(inscription, "statut", "")
-    statut_labels = {
-        "INSCRIT": "Inscrit",
-        "EN_ATTENTE": "En attente",
-        "ANNULE": "Annulé",
-    }
-    statut_label = statut_labels.get(statut, statut or "Non renseigné")
-
-    champ("Type d'inscription", type_label, col2, info_y - 2 * ROW_H_2COL, 6.5 * cm)
-    champ("Statut", statut_label, col1, info_y - 3 * ROW_H_2COL, 6.5 * cm)
-
-    date_inscription = getattr(inscription, "date_inscription", None)
-    if date_inscription:
-        date_inscription = date_inscription.strftime("%d/%m/%Y à %H:%M")
-
-    bas_section3 = champ("Date d'inscription", date_inscription, col2, info_y - 3 * ROW_H_2COL, 6.5 * cm)
+    dessiner_recu(
+        0
+    )
 
     # ============================================================
-    # BADGE STATUT (repère visuel rapide, rendu plus "officiel")
+    # LIGNE DE DÉCOUPE
     # ============================================================
 
-    statut_colors = {
-        "Inscrit": colors.HexColor("#198754"),
-        "En attente": colors.HexColor("#fd7e14"),
-        "Annulé": colors.HexColor("#dc3545"),
-    }
-    couleur_statut = statut_colors.get(statut_label, gris)
+    pdf.setStrokeColor(
+        gris
+    )
 
-    badge_w = 3.2 * cm
-    badge_h = 0.6 * cm
-    badge_x = largeur - marge_droite - 0.4 * cm - badge_w
-    badge_y = bas_section3 + 0.3 * cm
-
-    pdf.setFillColor(couleur_statut)
-    pdf.roundRect(badge_x, badge_y, badge_w, badge_h, 4, stroke=0, fill=1)
-    pdf.setFillColor(blanc)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawCentredString(badge_x + badge_w / 2, badge_y + 0.19 * cm, statut_label.upper())
-
-    # ============================================================
-    # SIGNATURES
-    # ============================================================
-
-    signature_y = 4.1 * cm
-
-    pdf.setStrokeColor(gris_bordure)
     pdf.setLineWidth(0.6)
-    pdf.line(marge_gauche + 0.4 * cm, signature_y + 0.5 * cm, largeur - marge_droite - 0.4 * cm, signature_y + 0.5 * cm)
 
-    pdf.setFillColor(bleu_fonce)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(marge_gauche + 0.5 * cm, signature_y, "Signature de l'étudiant")
-    pdf.drawString(largeur - marge_droite - 6.5 * cm, signature_y, "Visa de l'administration")
-
-    pdf.setDash(2, 2)
-    pdf.line(marge_gauche + 0.5 * cm, signature_y - 1.6 * cm, marge_gauche + 6.5 * cm, signature_y - 1.6 * cm)
-    pdf.line(
-        largeur - marge_droite - 6.5 * cm, signature_y - 1.6 * cm,
-        largeur - marge_droite - 0.5 * cm, signature_y - 1.6 * cm,
+    pdf.setDash(
+        4,
+        3
     )
+
+    pdf.line(
+        0.3 * cm,
+        demi_hauteur,
+        largeur - 0.3 * cm,
+        demi_hauteur
+    )
+
     pdf.setDash()
 
-    # ============================================================
-    # PIED DE PAGE
-    # ============================================================
+    # Petit texte de découpe
 
-    pdf.setStrokeColor(gris_bordure)
-    pdf.setLineWidth(0.5)
-    pdf.line(marge_gauche + 0.4 * cm, 1.65 * cm, largeur - marge_droite - 0.4 * cm, 1.65 * cm)
+    pdf.setFillColor(
+        gris
+    )
 
-    pdf.setFillColor(gris)
-    pdf.setFont("Helvetica", 7)
-    pdf.drawCentredString(largeur / 2, 1.35 * cm, "Document généré par le système de gestion des inscriptions")
-    pdf.drawCentredString(largeur / 2, 1.0 * cm, "Université Internationale de Cocody")
+    pdf.setFont(
+        "Helvetica",
+        5.5
+    )
+
+    pdf.drawCentredString(
+        largeur / 2,
+        demi_hauteur + 0.08 * cm,
+        "DECOUPER ICI"
+    )
 
     # ============================================================
     # FINALISATION
@@ -2509,208 +5876,115 @@ def fiche_inscription_pdf(request, pk):
 
     pdf.showPage()
     pdf.save()
+
     buffer.seek(0)
 
-    return FileResponse(
-        buffer,
-        as_attachment=False,
-        filename=f"fiche_inscription_{inscription.numero}.pdf",
-        content_type="application/pdf",
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/pdf"
     )
 
-from django.contrib.auth.decorators import login_required
+    response["Content-Disposition"] = (
+        f'inline; filename="recu_{numero_affichage}.pdf"'
+    )
+
+    return response
+
 
 @login_required
 @transaction.atomic
-def preinscription_valider(request, pk):
+def paiement_inscription_create(
+    request,
+    inscription_pk
+):
 
-    preinscription = get_object_or_404(
-        Preinscription.objects.select_related(
-            "candidat",
+    inscription = get_object_or_404(
+        Inscription.objects.select_related(
+            "etudiant__candidat",
             "annee_academique",
             "filiere",
             "niveau",
+            "classe",
         ),
-        pk=pk,
+        pk=inscription_pk
     )
 
-    # ==========================================
-    # VÉRIFICATION DU STATUT
-    # ==========================================
+    # ==========================================================
+    # INSCRIPTION DÉJÀ SOLDÉE
+    # ==========================================================
 
-    if preinscription.statut == "VALIDEE":
+    if inscription.inscription_soldee:
 
-        messages.warning(
+        messages.info(
             request,
-            "Cette préinscription est déjà validée."
+            "Les frais d'inscription sont déjà entièrement soldés."
         )
 
         return redirect(
-            "gestion:preinscription_detail",
-            pk=preinscription.pk
+            "gestion:inscription_detail",
+            pk=inscription.pk
         )
 
-    if preinscription.statut == "REJETEE":
+    # ==========================================================
+    # POST
+    # ==========================================================
 
-        messages.error(
-            request,
-            "Impossible de valider une préinscription rejetée."
+    if request.method == "POST":
+
+        form = PaiementInscriptionForm(
+            request.POST,
+            inscription=inscription
         )
 
-        return redirect(
-            "gestion:preinscription_detail",
-            pk=preinscription.pk
-        )
+        if form.is_valid():
 
-    # ==========================================
-    # CRÉATION OU RÉCUPÉRATION DE L'ÉTUDIANT
-    # ==========================================
-
-    etudiant, created = Etudiant.objects.get_or_create(
-        candidat=preinscription.candidat,
-        defaults={
-            "actif": True,
-        }
-    )
-
-    # ==========================================
-    # SI L'ÉTUDIANT EXISTE DÉJÀ
-    # ==========================================
-
-    if not created:
-
-        etudiant.actif = True
-        etudiant.save(update_fields=["actif"])
-
-    # ==========================================
-    # VALIDATION DE LA PRÉINSCRIPTION
-    # ==========================================
-
-    preinscription.statut = "VALIDEE"
-    preinscription.date_traitement = timezone.now()
-    preinscription.save(
-        update_fields=[
-            "statut",
-            "date_traitement",
-        ]
-    )
-
-    # ==========================================
-    # MESSAGE
-    # ==========================================
-
-    if created:
-
-        messages.success(
-            request,
-            f"La préinscription {preinscription.numero} "
-            f"a été validée. "
-            f"L'étudiant {etudiant.matricule} "
-            f"a été créé avec succès."
-        )
-
-    else:
-
-        messages.success(
-            request,
-            f"La préinscription {preinscription.numero} "
-            f"a été validée. "
-            f"L'étudiant {etudiant.matricule} "
-            f"a été réactivé."
-        )
-
-    return redirect(
-        "gestion:preinscription_detail",
-        pk=preinscription.pk
-    )
-
-@login_required
-@transaction.atomic
-def preinscription_activer_etudiant(request, pk):
-
-    if request.method != "POST":
-        return redirect(
-            "gestion:preinscription_detail",
-            pk=pk
-        )
-
-    preinscription = get_object_or_404(
-        Preinscription.objects.select_related(
-            "candidat",
-            "annee_academique",
-            "filiere",
-            "niveau",
-        ),
-        pk=pk,
-    )
-
-    # ==============================
-    # VÉRIFICATION DU STATUT
-    # ==============================
-
-    if preinscription.statut != "VALIDEE":
-
-        messages.error(
-            request,
-            "Cette préinscription doit être validée avant "
-            "de pouvoir activer l'étudiant."
-        )
-
-        return redirect(
-            "gestion:preinscription_detail",
-            pk=preinscription.pk
-        )
-
-    # ==============================
-    # RECHERCHE / CRÉATION ÉTUDIANT
-    # ==============================
-
-    etudiant, created = Etudiant.objects.get_or_create(
-        candidat=preinscription.candidat,
-        defaults={
-            "actif": True,
-        }
-    )
-
-    # ==============================
-    # CAS : ÉTUDIANT EXISTANT
-    # ==============================
-
-    if not created:
-
-        if etudiant.actif:
-
-            messages.info(
-                request,
-                f"L'étudiant {etudiant.matricule} est déjà actif."
+            paiement = form.save(
+                commit=False
             )
 
-        else:
+            paiement.inscription = inscription
 
-            etudiant.actif = True
-            etudiant.save(
-                update_fields=["actif"]
+            paiement.save()
+
+            # ======================================================
+            # MISE À JOUR DE LA TRANCHE
+            # ======================================================
+
+            paiement.echeance.mettre_a_jour()
+
+            # ======================================================
+            # CRÉATION DU REÇU
+            # ======================================================
+
+            RecuInscription.objects.create(
+                paiement=paiement
             )
 
             messages.success(
                 request,
-                f"L'étudiant {etudiant.matricule} "
-                f"a été réactivé avec succès."
+                f"Le paiement de "
+                f"{paiement.montant:,.0f} FCFA "
+                f"a été enregistré avec succès."
             )
 
-    # ==============================
-    # CAS : NOUVEL ÉTUDIANT
-    # ==============================
+            return redirect(
+                "gestion:inscription_detail",
+                pk=inscription.pk
+            )
 
     else:
 
-        messages.success(
-            request,
-            f"L'étudiant {etudiant.matricule} "
-            f"a été créé et activé avec succès."
+        form = PaiementInscriptionForm(
+            inscription=inscription
         )
 
-    return redirect(
-        "gestion:preinscription_detail",
-        pk=preinscription.pk
+    return render(
+        request,
+        "gestion/inscriptions/paiement_form.html",
+        {
+            "form": form,
+            "inscription": inscription,
+            "titre": "Enregistrer un paiement",
+            "bouton": "Enregistrer le paiement",
+        }
     )

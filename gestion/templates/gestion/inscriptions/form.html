@@ -1,4 +1,3 @@
-
 {% extends "gestion/base.html" %}
 
 {% block title %}
@@ -8,438 +7,533 @@
 {% block content %}
 
 <div class="container-fluid py-4">
+<!-- ===================================================== -->
+<!-- EN-TÊTE -->
+<!-- ===================================================== -->
 
-    <!-- ===================================================== -->
-    <!-- EN-TÊTE -->
-    <!-- ===================================================== -->
+<div class="mb-4">
 
-    <div class="mb-4">
+    <a
+        href="{% url 'gestion:inscriptions_liste' %}"
+        class="text-decoration-none text-muted"
+    >
 
-        <a
-            href="{% url 'gestion:inscriptions_liste' %}"
-            class="text-decoration-none text-muted"
-        >
+        <i class="bi bi-arrow-left me-1"></i>
 
-            <i class="bi bi-arrow-left me-1"></i>
+        Retour aux inscriptions
 
-            Retour aux inscriptions
-
-        </a>
-
-
-        <h2 class="fw-bold mt-3 mb-1">
-
-            <i class="bi bi-journal-plus me-2"></i>
-
-            {{ titre }}
-
-        </h2>
+    </a>
 
 
-        <p class="text-muted mb-0">
+    <h2 class="fw-bold mt-3 mb-1">
 
-            Enregistrement d'une inscription étudiant
+        <i class="bi bi-journal-plus me-2"></i>
 
-        </p>
+        {{ titre }}
 
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- FORMULAIRE -->
-    <!-- ===================================================== -->
-
-    <div class="row justify-content-center">
-
-        <div class="col-xl-9 col-lg-11">
-
-            <div class="card border-0 shadow-sm">
+    </h2>
 
 
-                <!-- HEADER CARD -->
+    <p class="text-muted mb-0">
 
-                <div class="card-header bg-white py-3">
+        Enregistrement d'une inscription étudiant
 
-                    <h5 class="mb-0 fw-bold">
+    </p>
 
-                        <i class="bi bi-person-vcard me-2"></i>
-
-                        Informations de l'inscription
-
-                    </h5>
-
-                </div>
+</div>
 
 
-                <!-- BODY -->
+<!-- ===================================================== -->
+<!-- FORMULAIRE -->
+<!-- ===================================================== -->
 
-                <div class="card-body p-4">
+<div class="row justify-content-center">
 
-                    <form method="post">
+    <div class="col-xl-9 col-lg-11">
 
-                        {% csrf_token %}
+        <div class="card border-0 shadow-sm">
 
 
-                        <!-- ERREURS GÉNÉRALES -->
+            <!-- ================================================= -->
+            <!-- HEADER CARD -->
+            <!-- ================================================= -->
 
-                        {% if form.non_field_errors %}
+            <div class="card-header bg-white py-3">
 
-                            <div class="alert alert-danger">
+                <h5 class="mb-0 fw-bold">
 
-                                <div class="fw-semibold mb-1">
+                    <i class="bi bi-person-vcard me-2"></i>
 
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Informations de l'inscription
 
-                                    Veuillez corriger les erreurs suivantes :
+                </h5>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- BODY -->
+            <!-- ================================================= -->
+
+            <div class="card-body p-4">
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+
+                    <!-- ================================================= -->
+                    <!-- ERREURS GÉNÉRALES -->
+                    <!-- ================================================= -->
+
+                    {% if form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+
+                            <div class="fw-semibold mb-1">
+
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+
+                                Veuillez corriger les erreurs suivantes :
+
+                            </div>
+
+
+                            {% for error in form.non_field_errors %}
+
+                                <div>
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <div class="row g-4">
+
+
+                        <!-- ================================================= -->
+                        <!-- ÉTUDIANT -->
+                        <!-- ================================================= -->
+
+                        <div class="col-12">
+
+                            <label
+                                for="{{ form.etudiant.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.etudiant.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.etudiant }}
+
+
+                            {% if form.etudiant.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.etudiant.errors }}
 
                                 </div>
 
-
-                                {% for error in form.non_field_errors %}
-
-                                    <div>
-                                        {{ error }}
-                                    </div>
-
-                                {% endfor %}
-
-                            </div>
-
-                        {% endif %}
-
-
-                        <div class="row g-4">
-
-
-                            <!-- ================================================= -->
-                            <!-- ÉTUDIANT -->
-                            <!-- ================================================= -->
-
-                            <div class="col-12">
-
-                                <label
-                                    for="{{ form.etudiant.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.etudiant.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.etudiant }}
-
-
-                                {% if form.etudiant.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.etudiant.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- ANNÉE ACADÉMIQUE -->
-                            <!-- ================================================= -->
-
-                            <div class="col-md-4">
-
-                                <label
-                                    for="{{ form.annee_academique.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.annee_academique.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.annee_academique }}
-
-
-                                {% if form.annee_academique.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.annee_academique.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- FILIÈRE -->
-                            <!-- ================================================= -->
-
-                            <div class="col-md-4">
-
-                                <label
-                                    for="{{ form.filiere.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.filiere.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.filiere }}
-
-
-                                {% if form.filiere.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.filiere.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- NIVEAU -->
-                            <!-- ================================================= -->
-
-                            <div class="col-md-4">
-
-                                <label
-                                    for="{{ form.niveau.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.niveau.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.niveau }}
-
-
-                                {% if form.niveau.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.niveau.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- CLASSE -->
-                            <!-- ================================================= -->
-
-                            <div class="col-12">
-
-                                <label
-                                    for="{{ form.classe.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.classe.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.classe }}
-
-
-                                <div class="form-text">
-
-                                    La classe doit correspondre à la filière,
-                                    au niveau et à l'année académique sélectionnés.
-
-                                </div>
-
-
-                                {% if form.classe.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.classe.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- TYPE D'INSCRIPTION -->
-                            <!-- ================================================= -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="{{ form.type_inscription.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.type_inscription.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.type_inscription }}
-
-
-                                {% if form.type_inscription.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.type_inscription.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- STATUT -->
-                            <!-- ================================================= -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="{{ form.statut.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.statut.label }}
-
-                                    <span class="text-danger">*</span>
-
-                                </label>
-
-
-                                {{ form.statut }}
-
-
-                                <div class="form-text">
-
-                                    Une inscription doit être au statut
-                                    <strong>Inscrit</strong> avant de pouvoir
-                                    créer sa scolarité.
-
-                                </div>
-
-
-                                {% if form.statut.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.statut.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- ================================================= -->
-                            <!-- OBSERVATION -->
-                            <!-- ================================================= -->
-
-                            <div class="col-12">
-
-                                <label
-                                    for="{{ form.observation.id_for_label }}"
-                                    class="form-label fw-semibold"
-                                >
-
-                                    {{ form.observation.label }}
-
-                                </label>
-
-
-                                {{ form.observation }}
-
-
-                                {% if form.observation.errors %}
-
-                                    <div class="text-danger small mt-1">
-
-                                        {{ form.observation.errors }}
-
-                                    </div>
-
-                                {% endif %}
-
-                            </div>
+                            {% endif %}
 
                         </div>
 
 
                         <!-- ================================================= -->
-                        <!-- ACTIONS -->
+                        <!-- ANNÉE ACADÉMIQUE -->
                         <!-- ================================================= -->
 
-                        <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                        <div class="col-md-4">
 
-                            <a
-                                href="{% url 'gestion:inscriptions_liste' %}"
-                                class="btn btn-outline-secondary"
+                            <label
+                                for="{{ form.annee_academique.id_for_label }}"
+                                class="form-label fw-semibold"
                             >
 
-                                <i class="bi bi-x-lg me-1"></i>
+                                {{ form.annee_academique.label }}
 
-                                Annuler
+                                <span class="text-danger">*</span>
 
-                            </a>
+                            </label>
 
 
-                            <button
-                                type="submit"
-                                class="btn btn-primary px-4"
-                            >
+                            {{ form.annee_academique }}
 
-                                <i class="bi bi-check-lg me-1"></i>
 
-                                {{ bouton }}
+                            {% if form.annee_academique.errors %}
 
-                            </button>
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.annee_academique.errors }}
+
+                                </div>
+
+                            {% endif %}
 
                         </div>
 
-                    </form>
 
-                </div>
+                        <!-- ================================================= -->
+                        <!-- FILIÈRE -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-4">
+
+                            <label
+                                for="{{ form.filiere.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.filiere.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.filiere }}
+
+
+                            {% if form.filiere.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.filiere.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- NIVEAU -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-4">
+
+                            <label
+                                for="{{ form.niveau.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.niveau.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.niveau }}
+
+
+                            {% if form.niveau.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.niveau.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- CLASSE -->
+                        <!-- ================================================= -->
+
+                        <div class="col-12">
+
+                            <label
+                                for="{{ form.classe.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.classe.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.classe }}
+
+
+                            <div class="form-text">
+
+                                La classe doit correspondre à la filière,
+                                au niveau et à l'année académique sélectionnés.
+
+                            </div>
+
+
+                            {% if form.classe.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.classe.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- TYPE D'INSCRIPTION -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="{{ form.type_inscription.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.type_inscription.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.type_inscription }}
+
+
+                            {% if form.type_inscription.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.type_inscription.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- FRAIS D'INSCRIPTION -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="{{ form.montant_inscription.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.montant_inscription.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            <div class="input-group">
+
+                                {{ form.montant_inscription }}
+
+                                <span class="input-group-text">
+                                    FCFA
+                                </span>
+
+                            </div>
+
+
+                            <div class="form-text">
+
+                                Montant total des frais d'inscription.
+
+                            </div>
+
+
+                            {% if form.montant_inscription.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.montant_inscription.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- MODE DE PAIEMENT -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="{{ form.mode_paiement_inscription.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.mode_paiement_inscription.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.mode_paiement_inscription }}
+
+
+                            <div class="form-text">
+
+                                Choisissez le paiement en une ou deux tranches.
+
+                            </div>
+
+
+                            {% if form.mode_paiement_inscription.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.mode_paiement_inscription.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- STATUT -->
+                        <!-- ================================================= -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="{{ form.statut.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.statut.label }}
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+
+                            {{ form.statut }}
+
+
+                            <div class="form-text">
+
+                                Une inscription doit être au statut
+                                <strong>Inscrit</strong> avant de pouvoir
+                                créer sa scolarité.
+
+                            </div>
+
+
+                            {% if form.statut.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.statut.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ================================================= -->
+                        <!-- OBSERVATION -->
+                        <!-- ================================================= -->
+
+                        <div class="col-12">
+
+                            <label
+                                for="{{ form.observation.id_for_label }}"
+                                class="form-label fw-semibold"
+                            >
+
+                                {{ form.observation.label }}
+
+                            </label>
+
+
+                            {{ form.observation }}
+
+
+                            {% if form.observation.errors %}
+
+                                <div class="text-danger small mt-1">
+
+                                    {{ form.observation.errors }}
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- ACTIONS -->
+                    <!-- ================================================= -->
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+
+                        <a
+                            href="{% url 'gestion:inscriptions_liste' %}"
+                            class="btn btn-outline-secondary"
+                        >
+
+                            <i class="bi bi-x-lg me-1"></i>
+
+                            Annuler
+
+                        </a>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary px-4"
+                        >
+
+                            <i class="bi bi-check-lg me-1"></i>
+
+                            {{ bouton }}
+
+                        </button>
+
+                    </div>
+
+                </form>
 
             </div>
 
         </div>
 
     </div>
+
+</div>
 
 </div>
 

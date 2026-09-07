@@ -472,24 +472,22 @@ class Etudiant(models.Model):
 # ============================================================
 # 8. INSCRIPTION
 # ============================================================
-
 class Inscription(models.Model):
 
     TYPE_CHOICES = [
-        (
-            "PREMIERE_INSCRIPTION",
-            "Première inscription"
-        ),
-        (
-            "REINSCRIPTION",
-            "Réinscription"
-        ),
+        ("PREMIERE_INSCRIPTION", "Première inscription"),
+        ("REINSCRIPTION", "Réinscription"),
     ]
 
     STATUT_CHOICES = [
         ("EN_ATTENTE", "En attente"),
         ("INSCRIT", "Inscrit"),
         ("ANNULE", "Annulé"),
+    ]
+
+    MODE_PAIEMENT_CHOICES = [
+        ("UNE_TRANCHE", "Une seule tranche"),
+        ("DEUX_TRANCHES", "Deux tranches"),
     ]
 
     numero = models.CharField(
@@ -540,6 +538,24 @@ class Inscription(models.Model):
         default="EN_ATTENTE"
     )
 
+    # =====================================================
+    # FRAIS D'INSCRIPTION
+    # =====================================================
+
+    montant_inscription = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+        verbose_name="Frais d'inscription"
+    )
+
+    mode_paiement_inscription = models.CharField(
+        max_length=20,
+        choices=MODE_PAIEMENT_CHOICES,
+        default="UNE_TRANCHE",
+        verbose_name="Mode de paiement"
+    )
+
     date_inscription = models.DateTimeField(
         auto_now_add=True
     )
@@ -566,6 +582,7 @@ class Inscription(models.Model):
     def save(self, *args, **kwargs):
 
         if not self.numero:
+
             annee = self.annee_academique.libelle
 
             dernier = Inscription.objects.filter(
@@ -585,14 +602,58 @@ class Inscription(models.Model):
             self.numero = f"INS-{annee}-{numero:05d}"
 
         super().save(*args, **kwargs)
+        
+    @property
+    def montant_inscription_paye(self):
+
+        from django.db.models import Sum
+
+        total = self.paiements_inscription.filter(
+            statut="VALIDE"
+        ).aggregate(
+            total=Sum("montant")
+        )["total"] or 0
+
+        return min(
+            total,
+            self.montant_inscription
+        )
+
+    @property
+    def reste_inscription_a_payer(self):
+
+        return max(
+            self.montant_inscription
+            - self.montant_inscription_paye,
+            0
+        )
+
+    @property
+    def inscription_soldee(self):
+
+        return self.reste_inscription_a_payer <= 0
+
+    @property
+    def pourcentage_inscription_paye(self):
+
+        if self.montant_inscription <= 0:
+            return 100
+
+        return int(
+            (
+                self.montant_inscription_paye
+                / self.montant_inscription
+            ) * 100
+        )   
 
     def __str__(self):
+
         return (
             f"{self.numero} - "
             f"{self.etudiant.matricule} - "
             f"{self.annee_academique.libelle}"
         )
-
+        
 # ============================================================
 # 9. SCOLARITÉ
 # ============================================================
@@ -972,3 +1033,370 @@ class Recu(models.Model):
             f"{self.numero} - "
             f"{self.paiement.reference}"
         )
+
+# ============================================================
+# 13. ÉCHÉANCE DES FRAIS D'INSCRIPTION
+# ============================================================
+
+# ============================================================
+# ÉCHÉANCES DES FRAIS D'INSCRIPTION
+# ============================================================
+
+class EcheanceInscription(models.Model):
+
+    TYPE_CHOICES = [
+        ("TRANCHE_1", "Tranche 1"),
+        ("TRANCHE_2", "Tranche 2"),
+    ]
+
+    STATUT_CHOICES = [
+        ("NON_PAYEE", "Non payée"),
+        ("PARTIELLE", "Partiellement payée"),
+        ("PAYEE", "Payée"),
+    ]
+
+    inscription = models.ForeignKey(
+        Inscription,
+        on_delete=models.CASCADE,
+        related_name="echeances_inscription"
+    )
+
+    type_tranche = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES
+    )
+
+    montant = models.DecimalField(
+        max_digits=12,
+        decimal_places=0
+    )
+
+    montant_paye = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0
+    )
+
+    date_echeance = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default="NON_PAYEE"
+    )
+
+    date_paiement = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+
+        verbose_name = "Échéance inscription"
+        verbose_name_plural = "Échéances inscription"
+
+        ordering = ["id"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "inscription",
+                    "type_tranche",
+                ],
+                name="unique_echeance_inscription_tranche"
+            )
+        ]
+
+    @property
+    def reste_a_payer(self):
+
+        return max(
+            self.montant - self.montant_paye,
+            0
+        )
+
+    def mettre_a_jour(self):
+
+        from django.db.models import Sum
+
+        total = (
+            self.paiements
+            .filter(
+                statut="VALIDE"
+            )
+            .aggregate(
+                total=Sum("montant")
+            )["total"]
+            or 0
+        )
+
+        self.montant_paye = min(
+            total,
+            self.montant
+        )
+
+        dernier_paiement = (
+            self.paiements
+            .filter(
+                statut="VALIDE"
+            )
+            .order_by("-date_paiement")
+            .first()
+        )
+
+        if self.montant_paye <= 0:
+
+            self.statut = "NON_PAYEE"
+            self.date_paiement = None
+
+        elif self.montant_paye < self.montant:
+
+            self.statut = "PARTIELLE"
+
+            if dernier_paiement:
+                self.date_paiement = (
+                    dernier_paiement.date_paiement
+                )
+
+        else:
+
+            self.montant_paye = self.montant
+            self.statut = "PAYEE"
+
+            if dernier_paiement:
+                self.date_paiement = (
+                    dernier_paiement.date_paiement
+                )
+
+        self.save(
+            update_fields=[
+                "montant_paye",
+                "statut",
+                "date_paiement",
+            ]
+        )
+
+    def __str__(self):
+
+        return (
+            f"{self.inscription.numero} - "
+            f"{self.get_type_tranche_display()}"
+        )
+
+
+# ============================================================
+# PAIEMENT DES FRAIS D'INSCRIPTION
+# ============================================================
+
+class PaiementInscription(models.Model):
+
+    MODE_PAIEMENT_CHOICES = [
+        ("ESPECES", "Espèces"),
+        ("CHEQUE", "Chèque"),
+        ("VIREMENT", "Virement bancaire"),
+        ("MOBILE_MONEY", "Mobile Money"),
+        ("CARTE", "Carte bancaire"),
+        ("AUTRE", "Autre"),
+    ]
+
+    STATUT_CHOICES = [
+        ("VALIDE", "Validé"),
+        ("ANNULE", "Annulé"),
+    ]
+
+    reference = models.CharField(
+        max_length=40,
+        unique=True,
+        editable=False
+    )
+
+    inscription = models.ForeignKey(
+        Inscription,
+        on_delete=models.PROTECT,
+        related_name="paiements_inscription"
+    )
+
+    echeance = models.ForeignKey(
+        EcheanceInscription,
+        on_delete=models.PROTECT,
+        related_name="paiements"
+    )
+
+    montant = models.DecimalField(
+        max_digits=12,
+        decimal_places=0
+    )
+
+    mode_paiement = models.CharField(
+        max_length=30,
+        choices=MODE_PAIEMENT_CHOICES
+    )
+
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default="VALIDE"
+    )
+
+    date_paiement = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    observation = models.TextField(
+        blank=True
+    )
+
+    class Meta:
+
+        verbose_name = "Paiement inscription"
+        verbose_name_plural = "Paiements inscription"
+
+        ordering = ["-date_paiement"]
+
+    def save(self, *args, **kwargs):
+
+        if not self.reference:
+
+            from datetime import datetime
+
+            annee = datetime.now().year
+
+            dernier = (
+                PaiementInscription.objects
+                .filter(
+                    reference__startswith=f"PIN-{annee}-"
+                )
+                .order_by("-id")
+                .first()
+            )
+
+            numero = 1
+
+            if dernier:
+
+                try:
+
+                    numero = (
+                        int(
+                            dernier.reference.split("-")[-1]
+                        ) + 1
+                    )
+
+                except (
+                    ValueError,
+                    IndexError
+                ):
+
+                    numero = dernier.id + 1
+
+            self.reference = (
+                f"PIN-{annee}-{numero:06d}"
+            )
+
+        super().save(*args, **kwargs)
+
+        if self.echeance_id:
+
+            self.echeance.mettre_a_jour()
+
+    def __str__(self):
+
+        return (
+            f"{self.reference} - "
+            f"{self.inscription.etudiant.matricule} - "
+            f"{self.montant} FCFA"
+        )
+
+
+# ============================================================
+# REÇU DES FRAIS D'INSCRIPTION
+# ============================================================
+
+class RecuInscription(models.Model):
+
+    numero = models.CharField(
+        max_length=40,
+        unique=True,
+        editable=False
+    )
+
+    paiement = models.OneToOneField(
+        PaiementInscription,
+        on_delete=models.PROTECT,
+        related_name="recu"
+    )
+
+    date_emission = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    observation = models.TextField(
+        blank=True
+    )
+
+    class Meta:
+
+        verbose_name = "Reçu inscription"
+        verbose_name_plural = "Reçus inscription"
+
+        ordering = ["-date_emission"]
+
+    def save(self, *args, **kwargs):
+
+        if not self.numero:
+
+            from datetime import datetime
+
+            annee = datetime.now().year
+
+            dernier = (
+                RecuInscription.objects
+                .filter(
+                    numero__startswith=f"RIN-{annee}-"
+                )
+                .order_by("-id")
+                .first()
+            )
+
+            numero = 1
+
+            if dernier:
+
+                try:
+
+                    numero = (
+                        int(
+                            dernier.numero.split("-")[-1]
+                        ) + 1
+                    )
+
+                except (
+                    ValueError,
+                    IndexError
+                ):
+
+                    numero = dernier.id + 1
+
+            self.numero = (
+                f"RIN-{annee}-{numero:06d}"
+            )
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+
+        return (
+            f"{self.numero} - "
+            f"{self.paiement.reference}"
+        )
+        
+# ============================================================
+# 14. PAIEMENT DES FRAIS D'INSCRIPTION
+# ============================================================
+# ============================================================
+# 15. REÇU DES FRAIS D'INSCRIPTION
+# ============================================================
+
