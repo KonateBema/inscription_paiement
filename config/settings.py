@@ -51,6 +51,8 @@ DEBUG = os.environ.get(
 # ============================================================
 
 ALLOWED_HOSTS = [
+    "inscription-paiement.onrender.com",
+    "inscription.uic.eu.com",
     "localhost",
     "127.0.0.1",
 ]
