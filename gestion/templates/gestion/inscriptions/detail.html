@@ -35,71 +35,42 @@ Inscription {{ inscription.numero }}
             {{ inscription.numero }}
 
         </h2>
-
-
         <p class="text-muted mb-0">
-
             Détails de l'inscription
-
         </p>
-
     </div>
 
-
     <div class="d-flex gap-2">
-
         <a
             href="{% url 'gestion:inscription_update' inscription.pk %}"
             class="btn btn-outline-primary"
         >
-
             <i class="bi bi-pencil me-1"></i>
-
             Modifier
-
         </a>
-
     </div>
-
 </div>
-
-
 <div class="row g-4">
-
-
     <!-- ================================================= -->
     <!-- COLONNE GAUCHE -->
     <!-- ================================================= -->
-
     <div class="col-xl-8">
-
-
         <!-- ================================================= -->
         <!-- INFORMATIONS ÉTUDIANT -->
         <!-- ================================================= -->
-
         <div class="card border-0 shadow-sm mb-4">
 
             <div class="card-header bg-white py-3">
-
                 <h5 class="mb-0 fw-bold">
-
                     <i class="bi bi-person-badge me-2"></i>
-
                     Étudiant
-
                 </h5>
-
             </div>
 
-
             <div class="card-body">
-
                 <div class="row g-4">
 
-
                     <div class="col-md-6">
-
                         <small class="text-muted d-block">
                             Matricule
                         </small>
@@ -875,33 +846,23 @@ Inscription {{ inscription.numero }}
                     <h5 class="mb-0 fw-bold">
 
                         <i class="bi bi-wallet2 me-2"></i>
-
                         Scolarité
-
                     </h5>
-
                 </div>
-
-
                 <div class="card-body">
-
 
                     <div class="d-flex justify-content-between mb-3">
 
                         <span class="text-muted">
                             Montant total
                         </span>
-
                         <strong>
 
                             {{ inscription.scolarite.montant_total|floatformat:2 }}
 
                             FCFA
-
                         </strong>
-
                     </div>
-
 
                     <div class="d-flex justify-content-between mb-3">
 
@@ -919,43 +880,27 @@ Inscription {{ inscription.numero }}
 
                     </div>
 
-
                     <div class="d-flex justify-content-between mb-3">
-
                         <span class="text-muted">
                             Montant net
                         </span>
-
                         <strong>
-
                             {{ inscription.scolarite.montant_net|floatformat:2 }}
 
                             FCFA
-
                         </strong>
-
                     </div>
-
-
                     <hr>
-
-
                     <div class="d-flex justify-content-between mb-3">
-
                         <span class="text-muted">
                             Montant payé
                         </span>
-
                         <strong class="text-success">
-
                             {{ inscription.scolarite.montant_paye|floatformat:2 }}
 
                             FCFA
-
                         </strong>
-
                     </div>
-
 
                     <div class="d-flex justify-content-between">
 
@@ -968,14 +913,9 @@ Inscription {{ inscription.numero }}
                             {{ inscription.scolarite.reste_a_payer|floatformat:2 }}
 
                             FCFA
-
                         </strong>
-
                     </div>
-
-
                     <div class="mt-4">
-
 
                         {% if inscription.scolarite.statut == "SOLDEE" %}
 
@@ -987,7 +927,6 @@ Inscription {{ inscription.numero }}
 
                             </div>
 
-
                         {% elif inscription.scolarite.statut == "PARTIELLEMENT_PAYEE" %}
 
                             <div class="alert alert-warning mb-0">
@@ -998,29 +937,20 @@ Inscription {{ inscription.numero }}
 
                             </div>
 
-
                         {% else %}
 
                             <div class="alert alert-danger mb-0">
-
                                 <i class="bi bi-exclamation-circle me-2"></i>
-
                                 Aucun paiement enregistré.
-
                             </div>
-
                         {% endif %}
-
                     </div>
-
-
                     <div class="mt-3">
 
                         <a
                             href="{% url 'gestion:scolarite_detail' inscription.scolarite.pk %}"
                             class="btn btn-outline-primary w-100"
                         >
-
                             <i class="bi bi-eye me-1"></i>
 
                             Voir la scolarité
@@ -1033,35 +963,27 @@ Inscription {{ inscription.numero }}
 
             </div>
 
-
         {% else %}
-
 
             <!-- ================================================= -->
             <!-- PAS ENCORE DE SCOLARITÉ -->
             <!-- ================================================= -->
 
             <div class="card border-0 shadow-sm">
-
                 <div class="card-body text-center py-4">
 
                     <i class="bi bi-wallet2 display-5 text-muted"></i>
 
-
                     <h6 class="fw-bold mt-3">
 
                         Aucune scolarité
-
                     </h6>
-
-
                     <p class="text-muted small">
 
                         Cette inscription ne possède pas encore
                         de scolarité.
 
                     </p>
-
 
                     {% if inscription.statut == "INSCRIT" %}
 
@@ -1085,19 +1007,12 @@ Inscription {{ inscription.numero }}
                             de la scolarité.
 
                         </div>
-
                     {% endif %}
-
                 </div>
-
             </div>
-
         {% endif %}
-
     </div>
-
 </div>
 
 </div>
-
 {% endblock %}

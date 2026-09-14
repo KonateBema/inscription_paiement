@@ -1,5 +1,5 @@
 from decimal import Decimal
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.shortcuts import render, get_object_or_404, redirect
@@ -151,6 +151,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 
 @login_required
+@permission_required('gestion.view_candidat', raise_exception=True)
 def candidats_liste(request):
 
     # =========================
@@ -201,6 +202,7 @@ def candidats_liste(request):
     )
 
 @login_required
+@permission_required('gestion.add_candidat', raise_exception=True)
 def candidat_ajouter(request):
 
     if request.method == "POST":
@@ -237,6 +239,7 @@ def candidat_ajouter(request):
 
 
 @login_required
+@permission_required('gestion.view_candidat', raise_exception=True)
 def candidat_detail(request, pk):
 
     candidat = get_object_or_404(
@@ -254,6 +257,7 @@ def candidat_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.change_candidat', raise_exception=True)
 def candidat_modifier(request, pk):
 
     candidat = get_object_or_404(
@@ -301,6 +305,7 @@ def candidat_modifier(request, pk):
     )
     
 @login_required
+@permission_required('gestion.view_preinscription', raise_exception=True)
 def preinscription_liste(request):
 
     preinscriptions = (
@@ -343,6 +348,7 @@ def preinscription_liste(request):
     )
 
 @login_required
+@permission_required('gestion.add_preinscription', raise_exception=True)
 def preinscription_create(request):
 
     if request.method == "POST":
@@ -379,6 +385,7 @@ def preinscription_create(request):
     )
 
 @login_required
+@permission_required('gestion.view_preinscription', raise_exception=True)
 def preinscription_detail(request, pk):
 
     preinscription = get_object_or_404(
@@ -401,6 +408,7 @@ def preinscription_detail(request, pk):
     
 
 @login_required
+@permission_required('gestion.change_preinscription', raise_exception=True)
 def preinscription_update(request, pk):
 
     preinscription = get_object_or_404(
@@ -448,6 +456,7 @@ def preinscription_update(request, pk):
 
 @login_required
 @require_POST
+@permission_required('gestion.delete_preinscription', raise_exception=True)
 def preinscription_delete(request, pk):
 
     preinscription = Preinscription.objects.filter(pk=pk).first()
@@ -481,6 +490,7 @@ def preinscription_delete(request, pk):
 # =========================================================
 
 @login_required
+@permission_required('gestion.view_etudiant', raise_exception=True)
 def etudiants_liste(request):
 
     etudiants = (
@@ -514,6 +524,7 @@ def etudiants_liste(request):
 
 
 @login_required
+@permission_required('gestion.view_etudiant', raise_exception=True)
 def etudiant_detail(request, pk):
 
     etudiant = get_object_or_404(
@@ -543,6 +554,7 @@ def etudiant_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.add_etudiant', raise_exception=True)
 def candidat_creer_etudiant(request, pk):
 
     candidat = get_object_or_404(
@@ -586,6 +598,7 @@ def candidat_creer_etudiant(request, pk):
 # =========================================================
 
 @login_required
+@permission_required('gestion.view_inscription', raise_exception=True)
 def inscriptions_liste(request):
     inscriptions = (
         Inscription.objects
@@ -629,6 +642,7 @@ def inscriptions_liste(request):
 
 @login_required
 @transaction.atomic
+@permission_required('gestion.add_inscription', raise_exception=True)
 def inscription_create(request):
 
     if request.method == "POST":
@@ -704,6 +718,7 @@ def inscription_create(request):
 
 
 @login_required
+@permission_required('gestion.view_inscription', raise_exception=True)
 def inscription_detail(request, pk):
 
     inscription = get_object_or_404(
@@ -741,6 +756,7 @@ def inscription_detail(request, pk):
     
 @login_required
 @transaction.atomic
+@permission_required('gestion.change_inscription', raise_exception=True)
 def inscription_update(request, pk):
 
     inscription = get_object_or_404(
@@ -979,6 +995,7 @@ def inscription_update(request, pk):
 
 
 @login_required
+@permission_required('gestion.view_scolarite', raise_exception=True)
 def scolarites_liste(request):
 
     scolarites = (
@@ -1046,6 +1063,7 @@ def scolarites_liste(request):
 
 
 @login_required
+@permission_required('gestion.add_scolarite', raise_exception=True)
 def scolarite_create(request):
 
     if request.method == "POST":
@@ -1084,6 +1102,7 @@ def scolarite_create(request):
 
 
 @login_required
+@permission_required('gestion.view_scolarite', raise_exception=True)
 def scolarite_detail(request, pk):
 
     scolarite = get_object_or_404(
@@ -1120,6 +1139,7 @@ def scolarite_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.change_scolarite', raise_exception=True)
 def scolarite_update(request, pk):
 
     scolarite = get_object_or_404(
@@ -1170,6 +1190,7 @@ def scolarite_update(request, pk):
 # ============================================================
 
 @login_required
+@permission_required('gestion.view_echeance', raise_exception=True)
 def echeances_liste(request):
 
     echeances = (
@@ -1223,6 +1244,7 @@ def echeances_liste(request):
 
 
 @login_required
+@permission_required('gestion.add_echeance', raise_exception=True)
 def echeance_create(request):
 
     if request.method == "POST":
@@ -1259,6 +1281,7 @@ def echeance_create(request):
 
 
 @login_required
+@permission_required('gestion.view_echeance', raise_exception=True)
 def echeance_detail(request, pk):
 
     echeance = get_object_or_404(
@@ -1289,6 +1312,7 @@ def echeance_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.change_echeance', raise_exception=True)
 def echeance_update(request, pk):
 
     echeance = get_object_or_404(
@@ -1339,6 +1363,7 @@ def echeance_update(request, pk):
 # ============================================================
 
 @login_required
+@permission_required('gestion.view_paiement', raise_exception=True)
 def paiements_liste(request):
 
     paiements = (
@@ -1387,6 +1412,7 @@ def paiements_liste(request):
 
 
 @login_required
+@permission_required('gestion.add_paiement', raise_exception=True)
 def paiement_create(request):
 
     if request.method == "POST":
@@ -1441,6 +1467,7 @@ def paiement_create(request):
 
 
 @login_required
+@permission_required('gestion.view_paiement', raise_exception=True)
 def paiement_detail(request, pk):
 
     paiement = get_object_or_404(
@@ -1472,6 +1499,7 @@ def paiement_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.change_paiement', raise_exception=True)
 def paiement_update(request, pk):
 
     paiement = get_object_or_404(
@@ -1679,6 +1707,7 @@ def nombre_en_lettres(nombre):
 
 
 @login_required
+@permission_required('gestion.view_recu', raise_exception=True)
 def recus_liste(request):
 
     recus = (
@@ -1723,6 +1752,7 @@ def recus_liste(request):
 
 
 @login_required
+@permission_required('gestion.view_recu', raise_exception=True)
 def recu_detail(request, pk):
 
     recu = get_object_or_404(
@@ -1752,6 +1782,7 @@ def recu_detail(request, pk):
 
 
 @login_required
+@permission_required('gestion.view_inscription', raise_exception=True)
 def fiche_inscription_pdfAAAA(request, pk):
 
     # ============================================================
@@ -2214,6 +2245,7 @@ def fiche_inscription_pdfAAAA(request, pk):
 
 
 @login_required
+@permission_required('gestion.view_inscription', raise_exception=True)
 def fiche_inscription_pdf(request, pk):
 
     # ============================================================
@@ -3896,6 +3928,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 @transaction.atomic
+@permission_required('gestion.change_preinscription', raise_exception=True)
 def preinscription_valider(request, pk):
 
     preinscription = get_object_or_404(
@@ -4000,6 +4033,7 @@ def preinscription_valider(request, pk):
 
 @login_required
 @transaction.atomic
+@permission_required('gestion.change_preinscription', raise_exception=True)
 def preinscription_activer_etudiant(request, pk):
 
     if request.method != "POST":
@@ -4090,6 +4124,7 @@ def preinscription_activer_etudiant(request, pk):
     )
     
 @login_required
+@permission_required('gestion.view_recu', raise_exception=True)
 def recu_pdfAAAAAA(request, pk):
 
     # ============================================================
@@ -4649,6 +4684,7 @@ Référence : {paiement.reference}
     return response
 
 @login_required
+@permission_required('gestion.view_recu', raise_exception=True)
 def recu_pdf(request, pk):
 
     # ============================================================
@@ -5893,6 +5929,7 @@ Référence : {paiement.reference}
 
 @login_required
 @transaction.atomic
+@permission_required('gestion.add_paiementinscription', raise_exception=True)
 def paiement_inscription_create(
     request,
     inscription_pk

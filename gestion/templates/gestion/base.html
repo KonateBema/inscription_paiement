@@ -960,13 +960,16 @@
         <!-- ADMISSIONS -->
         <!-- ================================================= -->
 
+        {% if perms.gestion.view_candidat or perms.gestion.view_preinscription %}
         <div class="menu-title">
             Admissions
         </div>
+        {% endif %}
 
 
         <!-- CANDIDATS -->
 
+        {% if perms.gestion.view_candidat %}
         <a
             href="{% url 'gestion:candidats_liste' %}"
             class="menu-link
@@ -982,10 +985,12 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- PRÉINSCRIPTIONS -->
 
+        {% if perms.gestion.view_preinscription %}
         <a
             href="{% url 'gestion:preinscription_liste' %}"
             class="menu-link
@@ -1001,19 +1006,23 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- ================================================= -->
         <!-- SCOLARITÉ -->
         <!-- ================================================= -->
 
+        {% if perms.gestion.view_etudiant or perms.gestion.view_inscription or perms.gestion.view_scolarite or perms.gestion.view_echeance %}
         <div class="menu-title">
             Scolarité
         </div>
+        {% endif %}
 
 
         <!-- ÉTUDIANTS -->
 
+        {% if perms.gestion.view_etudiant %}
         <a
             href="{% url 'gestion:etudiants_liste' %}"
             class="menu-link
@@ -1029,10 +1038,12 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- INSCRIPTIONS -->
 
+        {% if perms.gestion.view_inscription %}
         <a
             href="{% url 'gestion:inscriptions_liste' %}"
             class="menu-link
@@ -1048,10 +1059,12 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- SCOLARITÉS -->
 
+        {% if perms.gestion.view_scolarite %}
         <a
             href="{% url 'gestion:scolarites_liste' %}"
             class="menu-link
@@ -1067,10 +1080,12 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- ÉCHÉANCES -->
 
+        {% if perms.gestion.view_echeance %}
         <a
             href="{% url 'gestion:echeances_liste' %}"
             class="menu-link
@@ -1086,19 +1101,23 @@
             </span>
 
         </a>
+        {% endif %}
 
 
         <!-- ================================================= -->
         <!-- FINANCES -->
         <!-- ================================================= -->
 
+        {% if perms.gestion.view_paiement or perms.gestion.view_recu %}
         <div class="menu-title">
             Finances
         </div>
+        {% endif %}
 
 
         <!-- PAIEMENTS -->
 
+        {% if perms.gestion.view_paiement %}
         <a
             href="{% url 'gestion:paiements_liste' %}"
             class="menu-link
@@ -1114,9 +1133,11 @@
             </span>
 
         </a>
+        {% endif %}
 
         <!-- REÇUS -->
-        
+
+        {% if perms.gestion.view_recu %}
         <a
             href="{% url 'gestion:recus_liste' %}"
             class="menu-link
@@ -1131,6 +1152,7 @@
             </span>
         
         </a>
+        {% endif %}
       
         
 
@@ -1620,4 +1642,3 @@
 </body>
 
 </html>
-
