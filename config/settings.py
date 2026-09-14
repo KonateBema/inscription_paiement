@@ -1,9 +1,12 @@
+
 """
 Django settings for config project.
 """
 
 import os
 from pathlib import Path
+
+import dj_database_url
 
 
 # ============================================================
@@ -22,15 +25,19 @@ SECRET_KEY = os.environ.get(
     "django-insecure-dev-only-key-change-in-production"
 )
 
-# ------------------------------------------------------------
+
+# ============================================================
 # DEBUG
-# ------------------------------------------------------------
+# ============================================================
 #
 # LOCAL :
-#     DEBUG=True par défaut
+#     DEBUG=True
 #
 # RENDER :
-#     Mettre DEBUG=False dans les Environment Variables
+#     DEBUG=False
+#
+# Dans Render :
+#     DEBUG=False
 # ============================================================
 
 DEBUG = os.environ.get(
@@ -48,8 +55,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
+
 # ------------------------------------------------------------
-# Render fournit automatiquement le nom d'hôte externe
+# Render
 # ------------------------------------------------------------
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get(
@@ -65,11 +73,10 @@ if RENDER_EXTERNAL_HOSTNAME:
 # ------------------------------------------------------------
 # Domaines supplémentaires
 #
-# Exemple dans Render :
+# Exemple :
 #
-# ALLOWED_HOSTS=
-# gestion-bulletins-gem.onrender.com
-# ============================================================
+# ALLOWED_HOSTS=gestion-bulletins-gem.onrender.com,uic.eu.com
+# ------------------------------------------------------------
 
 EXTRA_ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
@@ -82,6 +89,37 @@ if EXTRA_ALLOWED_HOSTS:
         host.strip()
         for host in EXTRA_ALLOWED_HOSTS.split(",")
         if host.strip()
+    )
+
+
+# ============================================================
+# CSRF TRUSTED ORIGINS
+# ============================================================
+#
+# Nécessaire pour les formulaires POST en HTTPS sur Render.
+#
+# Exemple Render :
+#
+# CSRF_TRUSTED_ORIGINS=https://gestion-bulletins-gem.onrender.com
+#
+# Plusieurs domaines :
+#
+# CSRF_TRUSTED_ORIGINS=https://gestion-bulletins-gem.onrender.com,https://www.mondomaine.com
+# ============================================================
+
+CSRF_TRUSTED_ORIGINS = []
+
+EXTRA_CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "CSRF_TRUSTED_ORIGINS",
+    ""
+)
+
+if EXTRA_CSRF_TRUSTED_ORIGINS:
+
+    CSRF_TRUSTED_ORIGINS.extend(
+        origin.strip()
+        for origin in EXTRA_CSRF_TRUSTED_ORIGINS.split(",")
+        if origin.strip()
     )
 
 
@@ -101,10 +139,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'django.contrib.humanize',
+    "django.contrib.humanize",
 
     # --------------------------------------------------------
-    # Application du projet
+    # Application
     # --------------------------------------------------------
 
     "gestion",
@@ -125,7 +163,7 @@ MIDDLEWARE = [
 
     # --------------------------------------------------------
     # WhiteNoise
-    # Gestion des fichiers statiques sur Render
+    # Gestion des fichiers statiques
     # --------------------------------------------------------
 
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -214,27 +252,61 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 #
-# SQLite utilisé actuellement.
-#
 # LOCAL :
+#     SQLite
 #     db.sqlite3
 #
-# RENDER :
-#     db.sqlite3
+# PRODUCTION :
+#     PostgreSQL
+#     DATABASE_URL fourni par Render
 #
-# IMPORTANT :
-# Pour le moment, aucune connexion PostgreSQL n'est utilisée.
+# Fonctionnement :
+#
+#     DATABASE_URL absente
+#             ↓
+#          SQLite
+#
+#     DATABASE_URL présente
+#             ↓
+#        PostgreSQL
 # ============================================================
 
-DATABASES = {
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL"
+)
 
-    "default": {
 
-        "ENGINE": "django.db.backends.sqlite3",
+if DATABASE_URL:
 
-        "NAME": BASE_DIR / "db.sqlite3",
+    # --------------------------------------------------------
+    # PRODUCTION
+    # PostgreSQL
+    # --------------------------------------------------------
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+
+else:
+
+    # --------------------------------------------------------
+    # DEVELOPPEMENT LOCAL
+    # SQLite
+    # --------------------------------------------------------
+
+    DATABASES = {
+
+        "default": {
+
+            "ENGINE": "django.db.backends.sqlite3",
+
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # ============================================================
@@ -292,16 +364,18 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
+
 # ------------------------------------------------------------
-# Dossier contenant les fichiers statiques de l'application
+# Dossier des fichiers statiques
 # ------------------------------------------------------------
 
 STATICFILES_DIRS = [
     BASE_DIR / "gestion" / "static",
 ]
 
+
 # ------------------------------------------------------------
-# Dossier généré par collectstatic
+# Dossier collectstatic
 # ------------------------------------------------------------
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -318,14 +392,6 @@ STATICFILES_STORAGE = (
 
 # ============================================================
 # MEDIA FILES
-# ============================================================
-#
-# Exemple :
-#
-# media/
-# └── candidats/
-#     └── photos/
-#
 # ============================================================
 
 MEDIA_URL = "/media/"
@@ -351,9 +417,8 @@ LOGOUT_REDIRECT_URL = "/connexion/"
 # LOCAL :
 #     Les emails sont affichés dans le terminal.
 #
-# RENDER :
-#     Tu peux configurer SMTP avec les variables
-#     d'environnement.
+# PRODUCTION :
+#     Configuration SMTP via variables Render.
 # ============================================================
 
 EMAIL_BACKEND = os.environ.get(
@@ -361,10 +426,12 @@ EMAIL_BACKEND = os.environ.get(
     "django.core.mail.backends.console.EmailBackend"
 )
 
+
 EMAIL_HOST = os.environ.get(
     "EMAIL_HOST",
     ""
 )
+
 
 EMAIL_PORT = int(
     os.environ.get(
@@ -373,6 +440,7 @@ EMAIL_PORT = int(
     )
 )
 
+
 EMAIL_USE_TLS = (
     os.environ.get(
         "EMAIL_USE_TLS",
@@ -380,15 +448,18 @@ EMAIL_USE_TLS = (
     ).lower() == "true"
 )
 
+
 EMAIL_HOST_USER = os.environ.get(
     "EMAIL_HOST_USER",
     ""
 )
 
+
 EMAIL_HOST_PASSWORD = os.environ.get(
     "EMAIL_HOST_PASSWORD",
     ""
 )
+
 
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
@@ -423,13 +494,22 @@ if not DEBUG:
         "https",
     )
 
-    # Redirige HTTP vers HTTPS
+
+    # --------------------------------------------------------
+    # Redirection HTTP → HTTPS
+    # --------------------------------------------------------
+
     SECURE_SSL_REDIRECT = True
 
+
+    # --------------------------------------------------------
     # Cookies sécurisés
+    # --------------------------------------------------------
+
     SESSION_COOKIE_SECURE = True
 
     CSRF_COOKIE_SECURE = True
+
 
     # --------------------------------------------------------
     # Security Headers
@@ -438,3 +518,19 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
     X_FRAME_OPTIONS = "DENY"
+
+
+    # --------------------------------------------------------
+    # HSTS
+    # --------------------------------------------------------
+    #
+    # À activer uniquement lorsque le domaine HTTPS
+    # fonctionne correctement.
+    # --------------------------------------------------------
+
+    SECURE_HSTS_SECONDS = 31536000
+
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+    SECURE_HSTS_PRELOAD = True
+
