@@ -19,11 +19,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ============================================================
 # SECURITY
 # ============================================================
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 Mo
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-dev-only-key-change-in-production"
-)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "django.security": {"handlers": ["console"], "level": "WARNING"},
+    },
+}
+
+# SECRET_KEY = os.environ.get(
+#     "SECRET_KEY",
+#     "django-insecure-dev-only-key-change-in-production"
+# )
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    if os.environ.get("DEBUG", "True").lower() == "true":
+        SECRET_KEY = "django-insecure-dev-only-key-change-in-production"
+    else:
+        raise ValueError("SECRET_KEY manquante en production")
 
 
 # ============================================================

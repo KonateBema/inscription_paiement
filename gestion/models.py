@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.core.validators import FileExtensionValidator
 
 # ============================================================
 # 1. ANNÉE ACADÉMIQUE
@@ -200,7 +200,8 @@ class Candidat(models.Model):
     photo = models.ImageField(
         upload_to="candidats/photos/",
         null=True,
-        blank=True
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"])],
     )
 
     telephone = models.CharField(

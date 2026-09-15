@@ -1,14 +1,72 @@
 
 /* =========================================================
    UIC — ADMINISTRATION
+   Interface d'administration Django
+   ========================================================= */
+
+
+/* =========================================================
+   VARIABLES
    ========================================================= */
 
 :root {
-    --primary: #123b65;
-    --primary-dark: #0b2947;
-    --secondary: #f2b705;
-    --light: #f5f7fa;
-    --border: #e2e8f0;
+
+    --uic-primary: #123b65;
+    --uic-primary-dark: #0b2947;
+    --uic-primary-light: #eef4fa;
+
+    --uic-secondary: #f2b705;
+    --uic-secondary-dark: #d99f00;
+
+    --uic-success: #16a34a;
+    --uic-danger: #dc2626;
+    --uic-warning: #f59e0b;
+    --uic-info: #2563eb;
+
+    --uic-light: #f5f7fa;
+    --uic-white: #ffffff;
+
+    --uic-border: #e2e8f0;
+    --uic-border-dark: #cbd5e1;
+
+    --uic-text: #1e293b;
+    --uic-text-light: #475569;
+    --uic-muted: #64748b;
+
+    --uic-radius: 10px;
+    --uic-radius-small: 6px;
+
+    --uic-shadow:
+        0 2px 8px rgba(15, 23, 42, 0.05);
+
+    --uic-shadow-hover:
+        0 8px 24px rgba(15, 23, 42, 0.10);
+
+    --uic-transition:
+        all 0.2s ease;
+}
+
+
+/* =========================================================
+   BASE
+   ========================================================= */
+
+html,
+body {
+    background: var(--uic-light);
+    color: var(--uic-text);
+}
+
+body {
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    line-height: 1.5;
 }
 
 
@@ -17,27 +75,82 @@
    ========================================================= */
 
 #header {
-    background: var(--primary);
+
+    background: linear-gradient(
+        135deg,
+        var(--uic-primary),
+        var(--uic-primary-dark)
+    );
+
     min-height: 64px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 20px;
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.08);
+
+    position: relative;
+    z-index: 100;
+}
+
+
+/* Branding */
+
+#branding {
     display: flex;
     align-items: center;
 }
 
 #branding h1 {
+
     font-size: 20px;
     font-weight: 700;
+
+    margin: 0;
+
+    letter-spacing: 0.2px;
 }
 
 #branding h1 a {
-    color: #ffffff;
+
+    color: var(--uic-white);
+
+    text-decoration: none;
+
+    transition: var(--uic-transition);
 }
 
+#branding h1 a:hover {
+    opacity: 0.9;
+}
+
+
+/* User tools */
+
 #user-tools {
+
     font-size: 13px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
 }
 
 #user-tools a {
-    color: #ffffff;
+
+    color: var(--uic-white);
+
+    text-decoration: none;
+
+    transition: var(--uic-transition);
+}
+
+#user-tools a:hover {
+    color: var(--uic-secondary);
 }
 
 
@@ -46,22 +159,85 @@
    ========================================================= */
 
 #nav-sidebar {
-    background: #ffffff;
-    border-right: 1px solid var(--border);
+
+    background: var(--uic-white);
+
+    border-right:
+        1px solid var(--uic-border);
+
+    box-shadow:
+        2px 0 8px rgba(15, 23, 42, 0.025);
 }
+
+
+/* Modules sidebar */
 
 #nav-sidebar .module {
-    border-radius: 8px;
+
+    border:
+        1px solid var(--uic-border);
+
+    border-radius:
+        var(--uic-radius);
+
     overflow: hidden;
+
+    box-shadow: none;
 }
 
+
+/* Liens sidebar */
+
 #nav-sidebar a {
-    transition: 0.2s ease;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        padding 0.2s ease;
 }
 
 #nav-sidebar a:hover {
-    background: #eef4fa;
-    color: var(--primary);
+
+    background:
+        var(--uic-primary-light);
+
+    color:
+        var(--uic-primary);
+
+}
+
+
+/* Item actif */
+
+#nav-sidebar .current-model,
+#nav-sidebar .current-app {
+
+    background:
+        var(--uic-primary-light);
+}
+
+#nav-sidebar .current-model a,
+#nav-sidebar .current-app a {
+
+    color:
+        var(--uic-primary);
+
+    font-weight:
+        600;
+}
+
+
+/* =========================================================
+   CONTENU PRINCIPAL
+   ========================================================= */
+
+#content {
+
+    background:
+        var(--uic-light);
+
+    min-height:
+        calc(100vh - 64px);
 }
 
 
@@ -70,8 +246,36 @@
    ========================================================= */
 
 .main h1 {
-    color: var(--primary);
-    font-weight: 700;
+
+    color:
+        var(--uic-primary);
+
+    font-weight:
+        700;
+
+    font-size:
+        24px;
+
+    margin-bottom:
+        20px;
+}
+
+.main h2 {
+
+    color:
+        var(--uic-primary);
+
+    font-weight:
+        700;
+}
+
+.main h3 {
+
+    color:
+        var(--uic-text);
+
+    font-weight:
+        600;
 }
 
 
@@ -80,19 +284,66 @@
    ========================================================= */
 
 .module {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    background:
+        var(--uic-white);
+
+    border:
+        1px solid var(--uic-border);
+
+    border-radius:
+        var(--uic-radius);
+
+    overflow:
+        hidden;
+
+    box-shadow:
+        var(--uic-shadow);
+
+    margin-bottom:
+        20px;
+
+    transition:
+        var(--uic-transition);
 }
+
+.module:hover {
+
+    box-shadow:
+        var(--uic-shadow-hover);
+}
+
+
+/* Caption */
 
 .module caption {
-    background: var(--primary);
-    font-weight: 600;
+
+    background:
+        var(--uic-primary);
+
+    color:
+        var(--uic-white);
+
+    font-weight:
+        600;
+
+    padding:
+        12px 15px;
+
+    font-size:
+        14px;
 }
 
+
+/* Tables module */
+
 .module table {
-    background: #ffffff;
+
+    background:
+        var(--uic-white);
+
+    width:
+        100%;
 }
 
 
@@ -103,19 +354,62 @@
 .button,
 input[type="submit"],
 input[type="button"],
+input[type="reset"],
 .submit-row input,
 a.button {
-    border-radius: 6px;
+
+    border-radius:
+        var(--uic-radius-small) !important;
+
+    transition:
+        var(--uic-transition);
+
+    font-weight:
+        600;
+
+    cursor:
+        pointer;
 }
+
+
+/* Bouton principal */
 
 .button.default,
 input[type="submit"].default {
-    background: var(--primary);
+
+    background:
+        var(--uic-primary);
+
+    border:
+        1px solid var(--uic-primary);
+
+    color:
+        var(--uic-white);
 }
 
 .button.default:hover,
 input[type="submit"].default:hover {
-    background: var(--primary-dark);
+
+    background:
+        var(--uic-primary-dark);
+
+    border-color:
+        var(--uic-primary-dark);
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* Boutons secondaires */
+
+.button:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+a.button:hover {
+
+    transform:
+        translateY(-1px);
 }
 
 
@@ -125,33 +419,104 @@ input[type="submit"].default:hover {
 
 a:link,
 a:visited {
-    color: var(--primary);
+
+    color:
+        var(--uic-primary);
+
+    transition:
+        var(--uic-transition);
 }
 
 a:hover {
-    color: var(--primary-dark);
+
+    color:
+        var(--uic-primary-dark);
 }
 
 
 /* =========================================================
-   TABLEAUX
+   TABLEAUX — LISTE DES OBJETS
    ========================================================= */
 
 #result_list {
-    border-radius: 8px;
-    overflow: hidden;
+
+    width:
+        100%;
+
+    border-radius:
+        var(--uic-radius);
+
+    overflow:
+        hidden;
+
+    border:
+        1px solid var(--uic-border);
+
+    box-shadow:
+        var(--uic-shadow);
 }
 
+
+/* En-tête */
+
 #result_list thead th {
-    background: var(--primary);
+
+    background:
+        var(--uic-primary);
+
+    color:
+        var(--uic-white);
+
+    font-weight:
+        600;
+
+    padding:
+        12px 10px;
 }
 
 #result_list thead th a {
-    color: #ffffff;
+
+    color:
+        var(--uic-white);
+
+    text-decoration:
+        none;
+}
+
+
+/* Cellules */
+
+#result_list tbody td {
+
+    padding:
+        11px 10px;
+
+    border-bottom:
+        1px solid var(--uic-border);
+}
+
+
+/* Alternance */
+
+#result_list tbody tr:nth-child(even) {
+
+    background:
+        #fafcff;
+}
+
+
+/* Hover */
+
+#result_list tbody tr {
+
+    transition:
+        background 0.15s ease;
 }
 
 #result_list tbody tr:hover {
-    background: #f7fafc;
+
+    background:
+        var(--uic-primary-light);
 }
 
 
@@ -160,20 +525,144 @@ a:hover {
    ========================================================= */
 
 .form-row {
-    padding: 12px 0;
+
+    padding:
+        12px 0;
+
+    border-bottom:
+        1px solid transparent;
 }
+
+
+/* Labels */
+
+.form-row label {
+
+    color:
+        var(--uic-text);
+
+    font-weight:
+        600;
+}
+
+
+/* Champs */
 
 input,
 select,
 textarea {
-    border-radius: 6px !important;
+
+    border:
+        1px solid var(--uic-border-dark) !important;
+
+    border-radius:
+        var(--uic-radius-small) !important;
+
+    transition:
+        var(--uic-transition);
+
+    background:
+        var(--uic-white);
 }
+
+
+/* Focus */
 
 input:focus,
 select:focus,
 textarea:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 2px rgba(18, 59, 101, 0.12);
+
+    border-color:
+        var(--uic-primary) !important;
+
+    outline:
+        none;
+
+    box-shadow:
+        0 0 0 3px rgba(18, 59, 101, 0.12) !important;
+}
+
+
+/* Placeholder */
+
+input::placeholder,
+textarea::placeholder {
+
+    color:
+        #94a3b8;
+}
+
+
+/* =========================================================
+   FILTRES
+   ========================================================= */
+
+#changelist-filter {
+
+    background:
+        var(--uic-white);
+
+    border-left:
+        1px solid var(--uic-border);
+
+    box-shadow:
+        -2px 0 8px rgba(15, 23, 42, 0.03);
+}
+
+#changelist-filter h2 {
+
+    background:
+        var(--uic-primary);
+
+    color:
+        var(--uic-white);
+
+    padding:
+        12px;
+
+    font-size:
+        14px;
+}
+
+#changelist-filter h3 {
+
+    color:
+        var(--uic-primary);
+
+    font-weight:
+        600;
+}
+
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.paginator {
+
+    margin-top:
+        15px;
+
+    color:
+        var(--uic-muted);
+}
+
+.paginator a {
+
+    border-radius:
+        5px;
+
+    transition:
+        var(--uic-transition);
+}
+
+.paginator a:hover {
+
+    background:
+        var(--uic-primary-light);
+
+    color:
+        var(--uic-primary);
 }
 
 
@@ -182,7 +671,417 @@ textarea:focus {
    ========================================================= */
 
 .messagelist li {
-    border-radius: 6px;
+
+    border-radius:
+        var(--uic-radius-small);
+
+    margin-bottom:
+        8px;
+
+    box-shadow:
+        var(--uic-shadow);
+}
+
+
+/* =========================================================
+   DASHBOARD — CARTES FINANCIÈRES
+   ========================================================= */
+
+.uic-financial-cards {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap:
+        18px;
+
+    margin-bottom:
+        30px;
+}
+
+
+/* Carte */
+
+.uic-financial-card {
+
+    position:
+        relative;
+
+    background:
+        var(--uic-white);
+
+    border:
+        1px solid var(--uic-border);
+
+    border-radius:
+        12px;
+
+    padding:
+        20px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        15px;
+
+    box-shadow:
+        var(--uic-shadow);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+
+    overflow:
+        hidden;
+}
+
+
+/* Petite barre supérieure */
+
+.uic-financial-card::before {
+
+    content:
+        "";
+
+    position:
+        absolute;
+
+    top:
+        0;
+
+    left:
+        0;
+
+    width:
+        100%;
+
+    height:
+        3px;
+
+    background:
+        var(--uic-primary);
+}
+
+
+/* Hover */
+
+.uic-financial-card:hover {
+
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        var(--uic-shadow-hover);
+
+    border-color:
+        #d5dee9;
+}
+
+
+/* =========================================================
+   ICÔNE FINANCIÈRE
+   ========================================================= */
+
+.uic-financial-icon {
+
+    width:
+        52px;
+
+    height:
+        52px;
+
+    flex-shrink:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    background:
+        var(--uic-primary-light);
+
+    color:
+        var(--uic-primary);
+
+    border-radius:
+        11px;
+
+    font-size:
+        23px;
+
+    transition:
+        var(--uic-transition);
+}
+
+.uic-financial-card:hover
+.uic-financial-icon {
+
+    transform:
+        scale(1.05);
+}
+
+
+/* =========================================================
+   CONTENU CARTE FINANCIÈRE
+   ========================================================= */
+
+.uic-financial-content {
+
+    min-width:
+        0;
+
+    flex:
+        1;
+}
+
+.uic-financial-content > span {
+
+    display:
+        block;
+
+    color:
+        var(--uic-muted);
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    margin-bottom:
+        4px;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        0.3px;
+}
+
+
+.uic-financial-content strong {
+
+    display:
+        block;
+
+    color:
+        var(--uic-primary);
+
+    font-size:
+        24px;
+
+    line-height:
+        1.2;
+
+    font-weight:
+        700;
+
+    white-space:
+        nowrap;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+.uic-financial-content strong small {
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    margin-left:
+        3px;
+}
+
+
+.uic-financial-content em {
+
+    display:
+        block;
+
+    margin-top:
+        5px;
+
+    color:
+        #94a3b8;
+
+    font-size:
+        10px;
+
+    font-style:
+        normal;
+}
+
+
+/* =========================================================
+   CARTES STATISTIQUES UIC
+   ========================================================= */
+
+.uic-stat-cards {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap:
+        18px;
+
+    margin-bottom:
+        25px;
+}
+
+
+.uic-stat-card {
+
+    background:
+        var(--uic-white);
+
+    border:
+        1px solid var(--uic-border);
+
+    border-radius:
+        12px;
+
+    padding:
+        20px;
+
+    box-shadow:
+        var(--uic-shadow);
+
+    transition:
+        var(--uic-transition);
+}
+
+
+.uic-stat-card:hover {
+
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        var(--uic-shadow-hover);
+}
+
+
+.uic-stat-card-title {
+
+    color:
+        var(--uic-muted);
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    margin-bottom:
+        7px;
+
+    text-transform:
+        uppercase;
+}
+
+
+.uic-stat-card-value {
+
+    color:
+        var(--uic-primary);
+
+    font-size:
+        28px;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.2;
+}
+
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.uic-badge {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    padding:
+        4px 9px;
+
+    border-radius:
+        999px;
+
+    font-size:
+        11px;
+
+    font-weight:
+        600;
+}
+
+
+.uic-badge-success {
+
+    background:
+        #dcfce7;
+
+    color:
+        #166534;
+}
+
+
+.uic-badge-danger {
+
+    background:
+        #fee2e2;
+
+    color:
+        #991b1b;
+}
+
+
+.uic-badge-warning {
+
+    background:
+        #fef3c7;
+
+    color:
+        #92400e;
+}
+
+
+.uic-badge-info {
+
+    background:
+        #dbeafe;
+
+    color:
+        #1e40af;
 }
 
 
@@ -191,168 +1090,67 @@ textarea:focus {
    ========================================================= */
 
 #footer {
-    text-align: center;
-    padding: 20px;
-    color: #64748b;
+
+    text-align:
+        center;
+
+    padding:
+        20px;
+
+    color:
+        var(--uic-muted);
+
+    font-size:
+        12px;
+
+    background:
+        var(--uic-white);
+
+    border-top:
+        1px solid var(--uic-border);
+
+    margin-top:
+        30px;
 }
 
 
 /* =========================================================
-   RESPONSIVE
+   SCROLLBAR
    ========================================================= */
 
-@media (max-width: 768px) {
+::-webkit-scrollbar {
 
-    #branding h1 {
-        font-size: 16px;
-    }
+    width:
+        8px;
 
-    #user-tools {
-        font-size: 11px;
-    }
-
-    .module {
-        overflow-x: auto;
-    }
-
-    /* =========================================================
-   INDICATEURS FINANCIERS
-   ========================================================= */
-
-.uic-financial-cards {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
-    gap: 18px;
-
-    margin-bottom: 30px;
-
+    height:
+        8px;
 }
 
+::-webkit-scrollbar-track {
 
-.uic-financial-card {
-
-    background: #ffffff;
-
-    border: 1px solid var(--uic-border);
-
-    border-radius: 12px;
-
-    padding: 20px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-
-    box-shadow:
-        0 2px 8px rgba(15, 23, 42, .035);
-
-    transition:
-        transform .2s ease,
-        box-shadow .2s ease;
-
+    background:
+        #f1f5f9;
 }
 
+::-webkit-scrollbar-thumb {
 
-.uic-financial-card:hover {
+    background:
+        #cbd5e1;
 
-    transform: translateY(-3px);
-
-    box-shadow:
-        0 8px 22px rgba(15, 23, 42, .08);
-
+    border-radius:
+        10px;
 }
 
+::-webkit-scrollbar-thumb:hover {
 
-.uic-financial-icon {
-
-    width: 52px;
-
-    height: 52px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background: #eef4fa;
-
-    border-radius: 11px;
-
-    font-size: 23px;
-
-}
-
-
-.uic-financial-content {
-
-    min-width: 0;
-
-}
-
-
-.uic-financial-content > span {
-
-    display: block;
-
-    color: var(--uic-muted);
-
-    font-size: 12px;
-
-    font-weight: 600;
-
-    margin-bottom: 3px;
-
-}
-
-
-.uic-financial-content strong {
-
-    display: block;
-
-    color: var(--uic-primary);
-
-    font-size: 24px;
-
-    line-height: 1.2;
-
-}
-
-
-.uic-financial-content strong small {
-
-    font-size: 12px;
-
-    font-weight: 600;
-
-}
-
-
-.uic-financial-content em {
-
-    display: block;
-
-    margin-top: 4px;
-
-    color: #94a3b8;
-
-    font-size: 10px;
-
-    font-style: normal;
-
+    background:
+        #94a3b8;
 }
 
 
 /* =========================================================
-   FINANCES - RESPONSIVE
+   RESPONSIVE — TABLETTE
    ========================================================= */
 
 @media (max-width: 1100px) {
@@ -361,20 +1159,174 @@ textarea:focus {
 
         grid-template-columns:
             repeat(2, minmax(0, 1fr));
-
     }
 
+    .uic-stat-cards {
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
 }
 
 
-@media (max-width: 700px) {
+/* =========================================================
+   RESPONSIVE — MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    #header {
+
+        min-height:
+            58px;
+
+        padding:
+            0 12px;
+    }
+
+
+    #branding h1 {
+
+        font-size:
+            16px;
+    }
+
+
+    #user-tools {
+
+        font-size:
+            11px;
+
+        gap:
+            6px;
+    }
+
+
+    #content {
+
+        padding:
+            15px;
+    }
+
+
+    .main h1 {
+
+        font-size:
+            20px;
+    }
+
+
+    .module {
+
+        overflow-x:
+            auto;
+    }
+
 
     .uic-financial-cards {
 
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
 
+        gap:
+            12px;
     }
 
+
+    .uic-stat-cards {
+
+        grid-template-columns:
+            1fr;
+
+        gap:
+            12px;
+    }
+
+
+    .uic-financial-card {
+
+        padding:
+            16px;
+    }
+
+
+    .uic-financial-content strong {
+
+        font-size:
+            21px;
+    }
+
+
+    #result_list {
+
+        font-size:
+            12px;
+    }
+
+
+    #result_list thead th,
+    #result_list tbody td {
+
+        padding:
+            8px;
+    }
 }
+
+
+/* =========================================================
+   RESPONSIVE — PETITS ÉCRANS
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    #branding h1 {
+
+        font-size:
+            14px;
+    }
+
+
+    #user-tools {
+
+        font-size:
+            10px;
+    }
+
+
+    .uic-financial-card {
+
+        gap:
+            12px;
+
+        padding:
+            14px;
+    }
+
+
+    .uic-financial-icon {
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        font-size:
+            19px;
+    }
+
+
+    .uic-financial-content strong {
+
+        font-size:
+            19px;
+    }
+
+
+    .uic-stat-card-value {
+
+        font-size:
+            24px;
+    }
 }
 
