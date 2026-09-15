@@ -1,0 +1,62 @@
+
+{% extends "admin/base.html" %}
+
+{% load static %}
+
+{% block title %}
+    {% if subtitle %}
+        {{ subtitle }} | 
+    {% endif %}
+    {{ title }} | UIC — Gestion Scolaire
+{% endblock %}
+
+
+{% block extrastyle %}
+    {{ block.super }}
+
+    <link
+        rel="stylesheet"
+        href="{% static 'gestion/admin/uic-admin.css' %}"
+    >
+
+    <style>
+
+        /* Logo UIC */
+
+        #branding {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #branding::before {
+            content: "";
+            display: block;
+            width: 42px;
+            height: 42px;
+            background-image: url("{% static 'gestion/images/logo.jpeg' %}");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: white;
+            border-radius: 6px;
+        }
+
+    </style>
+{% endblock %}
+
+
+{% block branding %}
+
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        UIC — Gestion Scolaire
+    </a>
+</h1>
+
+{% endblock %}
+
+
+{% block nav-global %}
+{% endblock %}
+

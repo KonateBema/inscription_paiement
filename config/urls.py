@@ -9,7 +9,11 @@ from django.conf.urls.static import static
 urlpatterns = [
 
     # Administration Django
-    path("admin/", admin.site.urls),
+    # path("admin/", admin.site.urls),
+     path(
+        "espace-direction-7f3k9/",
+        admin.site.urls,
+    ),
     
 
     # Application de gestion

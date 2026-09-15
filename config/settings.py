@@ -495,13 +495,27 @@ if not DEBUG:
         "HTTP_X_FORWARDED_PROTO",
         "https",
     )
-
-
+    
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    # Déconnexion après 15 minutes d'inactivité
+    SESSION_COOKIE_AGE = 15 * 60  # 900 secondes
+    # La session expire lorsque l'utilisateur ferme complètement
+    # le navigateur uniquement si cette option est True.
+    # Ici, on garde la session jusqu'à expiration.
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+    # Renouvelle l'expiration de la session à chaque requête.
+    # IMPORTANT : cela permet d'avoir 15 minutes d'inactivité
+    # et non 15 minutes maximum après la connexion.
+    SESSION_SAVE_EVERY_REQUEST = True
     # --------------------------------------------------------
     # Redirection HTTP → HTTPS
     # --------------------------------------------------------
+    CSRF_COOKIE_SAMESITE = "Lax"
 
     SECURE_SSL_REDIRECT = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 
     # --------------------------------------------------------

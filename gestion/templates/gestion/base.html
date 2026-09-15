@@ -1634,6 +1634,108 @@
 <!-- ========================================================= -->
 <!-- JAVASCRIPT DES PAGES -->
 <!-- ========================================================= -->
+ <!-- ========================================================= -->
+<!-- DÉCONNEXION AUTOMATIQUE APRÈS 15 MINUTES D'INACTIVITÉ -->
+<!-- ========================================================= -->
+<!-- ========================================================= -->
+<!-- DÉCONNEXION AUTOMATIQUE APRÈS 15 MINUTES D'INACTIVITÉ -->
+<!-- ========================================================= -->
+
+{% if request.user.is_authenticated %}
+
+<form
+    id="autoLogoutForm"
+    method="post"
+    action="{% url 'logout' %}"
+    style="display: none;"
+>
+    {% csrf_token %}
+</form>
+
+
+<script>
+
+(function () {
+
+    const INACTIVITY_LIMIT = 15 * 60 * 1000;
+
+    let inactivityTimer;
+
+
+    /* ===================================================== */
+    /* DÉCONNEXION AUTOMATIQUE */
+    /* ===================================================== */
+
+    function autoLogout() {
+
+        const form = document.getElementById(
+            "autoLogoutForm"
+        );
+
+        if (form) {
+
+            form.submit();
+
+        }
+
+    }
+
+
+    /* ===================================================== */
+    /* RÉINITIALISATION DU TIMER */
+    /* ===================================================== */
+
+    function resetInactivityTimer() {
+
+        clearTimeout(inactivityTimer);
+
+        inactivityTimer = setTimeout(
+            autoLogout,
+            INACTIVITY_LIMIT
+        );
+
+    }
+
+
+    /* ===================================================== */
+    /* ACTIVITÉS UTILISATEUR */
+    /* ===================================================== */
+
+    const activityEvents = [
+
+        "mousemove",
+        "mousedown",
+        "keydown",
+        "scroll",
+        "touchstart",
+        "click"
+
+    ];
+
+
+    activityEvents.forEach(function (eventName) {
+
+        document.addEventListener(
+            eventName,
+            resetInactivityTimer,
+            { passive: true }
+        );
+
+    });
+
+
+    /* ===================================================== */
+    /* DÉMARRAGE */
+    /* ===================================================== */
+
+    resetInactivityTimer();
+
+
+})();
+
+</script>
+
+{% endif %}
 
 {% block extra_js %}
 {% endblock %}

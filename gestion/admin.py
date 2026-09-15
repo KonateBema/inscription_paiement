@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.template.response import TemplateResponse
+from django.utils import timezone
+
 from .models import (
     AnneeAcademique,
     Filiere,
@@ -13,6 +16,209 @@ from .models import (
     Paiement,
     Recu,
 )
+from django.contrib import admin
+from django.template.response import TemplateResponse
+from django.utils import timezone
+from django.db.models import Sum
+
+# ============================================================
+# PERSONNALISATION ADMIN UIC
+# ============================================================
+
+admin.site.site_header = "UIC — Gestion Scolaire"
+admin.site.site_title = "UIC — Administration"
+admin.site.index_title = "Tableau de bord"
+
+
+# ============================================================
+# TABLEAU DE BORD ADMIN UIC
+# ============================================================
+
+def uic_admin_indexzzzz(request, extra_context=None):
+    """
+    Tableau de bord personnalisé de l'administration UIC.
+    """
+
+    # --------------------------------------------------------
+    # COMPTEURS
+    # --------------------------------------------------------
+
+    context = {
+        "current_date": timezone.now(),
+
+        # Population
+        "candidats_count": Candidat.objects.count(),
+        "etudiants_count": Etudiant.objects.count(),
+
+        # Scolarité
+        "inscriptions_count": Inscription.objects.count(),
+        "preinscriptions_count": Preinscription.objects.count(),
+        "scolarites_count": Scolarite.objects.count(),
+        "echeances_count": Echeance.objects.count(),
+
+        # Finance
+        "paiements_count": Paiement.objects.count(),
+        "recus_count": Recu.objects.count(),
+
+        # Référentiels
+        "annees_count": AnneeAcademique.objects.count(),
+        "filieres_count": Filiere.objects.count(),
+        "niveaux_count": Niveau.objects.count(),
+        "classes_count": Classe.objects.count(),
+    }
+
+    # --------------------------------------------------------
+    # CONTEXTE NATIF DJANGO ADMIN
+    # --------------------------------------------------------
+
+    context.update(
+        {
+            **admin.site.each_context(request),
+            "title": admin.site.index_title,
+            "app_list": admin.site.get_app_list(request),
+            "is_popup": False,
+            "is_nav_sidebar_enabled": admin.site.enable_nav_sidebar,
+        }
+    )
+
+    # --------------------------------------------------------
+    # CONTEXTE SUPPLÉMENTAIRE
+    # --------------------------------------------------------
+
+    if extra_context:
+        context.update(extra_context)
+
+    # --------------------------------------------------------
+    # AFFICHAGE
+    # --------------------------------------------------------
+
+    return TemplateResponse(
+        request,
+        admin.site.index_template or "admin/index.html",
+        context,
+    )
+def uic_admin_index(request, extra_context=None):
+    """
+    Tableau de bord personnalisé de l'administration UIC.
+    """
+
+    # ========================================================
+    # CALCULS FINANCIERS
+    # ========================================================
+
+    total_scolarites = (
+        Scolarite.objects.aggregate(
+            total=Sum("montant_net")
+        )["total"] or 0
+    )
+
+    total_encaisse = (
+        Scolarite.objects.aggregate(
+            total=Sum("montant_paye")
+        )["total"] or 0
+    )
+
+    total_reste = (
+        Scolarite.objects.aggregate(
+            total=Sum("reste_a_payer")
+        )["total"] or 0
+    )
+
+    # ========================================================
+    # CONTEXTE DU DASHBOARD
+    # ========================================================
+
+    context = {
+        "current_date": timezone.now(),
+
+        # ----------------------------------------------------
+        # POPULATION
+        # ----------------------------------------------------
+
+        "candidats_count": Candidat.objects.count(),
+
+        "etudiants_count": Etudiant.objects.count(),
+
+        # ----------------------------------------------------
+        # SCOLARITÉ
+        # ----------------------------------------------------
+
+        "inscriptions_count": Inscription.objects.count(),
+
+        "preinscriptions_count": Preinscription.objects.count(),
+
+        "scolarites_count": Scolarite.objects.count(),
+
+        "echeances_count": Echeance.objects.count(),
+
+        # ----------------------------------------------------
+        # FINANCES
+        # ----------------------------------------------------
+
+        "paiements_count": Paiement.objects.count(),
+
+        "recus_count": Recu.objects.count(),
+
+        # ----------------------------------------------------
+        # PARAMÉTRAGE
+        # ----------------------------------------------------
+
+        "annees_count": AnneeAcademique.objects.count(),
+
+        "filieres_count": Filiere.objects.count(),
+
+        "niveaux_count": Niveau.objects.count(),
+
+        "classes_count": Classe.objects.count(),
+
+        # ----------------------------------------------------
+        # MONTANTS FINANCIERS
+        # ----------------------------------------------------
+
+        "total_scolarites": total_scolarites,
+
+        "total_encaisse": total_encaisse,
+
+        "total_reste": total_reste,
+    }
+
+    # ========================================================
+    # CONTEXTE NATIF DJANGO ADMIN
+    # ========================================================
+
+    context.update(
+        {
+            **admin.site.each_context(request),
+
+            "title": admin.site.index_title,
+
+            "app_list": admin.site.get_app_list(request),
+
+            "is_popup": False,
+
+            "is_nav_sidebar_enabled": admin.site.enable_nav_sidebar,
+        }
+    )
+
+    # ========================================================
+    # CONTEXTE SUPPLÉMENTAIRE
+    # ========================================================
+
+    if extra_context:
+        context.update(extra_context)
+
+    # ========================================================
+    # AFFICHAGE
+    # ========================================================
+
+    return TemplateResponse(
+        request,
+        admin.site.index_template or "admin/index.html",
+        context,
+    )
+
+# Remplacement de la page d'accueil standard de l'admin
+admin.site.index = uic_admin_index
 
 
 # ============================================================
