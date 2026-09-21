@@ -34,7 +34,6 @@ def dashboard(request):
     # ==============================
     # ADMISSIONS
     # ==============================
-
     total_candidats = Candidat.objects.filter(
         actif=True
     ).count()
